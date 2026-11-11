@@ -10,6 +10,8 @@ pub fn parse(String, limits? : ParseLimits) -> Result[Model, Diagnostic]
 
 pub fn parse_dimacs(String, limits? : Limits) -> Result[Formula, Diagnostic]
 
+pub fn parse_trace(String) -> Result[Trace, Diagnostic]
+
 // Errors
 type Failure derive(@debug.Debug)
 pub fn Failure::to_repr(Self) -> @debug.Repr
@@ -119,6 +121,7 @@ pub(all) struct Trace {
 } derive(Eq, @debug.Debug)
 pub fn Trace::equal(Self, Self) -> Bool
 pub fn Trace::not_equal(Self, Self) -> Bool
+pub fn Trace::to_json_string(Self) -> String
 pub fn Trace::to_repr(Self) -> @debug.Repr
 
 pub(all) enum Verdict {
