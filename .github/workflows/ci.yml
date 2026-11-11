@@ -1,0 +1,51 @@
+name: MoonBTOR verification
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  verify:
+    name: verify-${{ matrix.target }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [wasm-gc, wasm, js, native]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned official compiler and core with SHA256 verification
+        shell: bash
+        run: |
+          bash tools/install-toolchain.sh "$RUNNER_TEMP/moonbtor-toolchain"
+          echo "MOON_TOOLCHAIN_ROOT=$RUNNER_TEMP/moonbtor-toolchain" >> "$GITHUB_ENV"
+          echo "$RUNNER_TEMP/moonbtor-toolchain/bin" >> "$GITHUB_PATH"
+      - name: Regenerate independent oracles and inspect interfaces
+        run: |
+          python tools/generate_oracles.py
+          moon info
+          moon fmt
+          moon fmt --check
+          git diff --exit-code
+      - name: Strict check build test
+        run: |
+          moon check --target "${{ matrix.target }}" --deny-warn
+          moon build --target "${{ matrix.target }}" --deny-warn
+          moon test --target "${{ matrix.target }}" --deny-warn
+      - name: Run downstream workflows
+        run: |
+          moon run examples/counter --target "${{ matrix.target }}" --deny-warn
+          moon run examples/simulate --target "${{ matrix.target }}" --deny-warn
+          moon run examples/external --target "${{ matrix.target }}" --deny-warn
+      - name: External solver integration through independent Python enumeration
+        if: matrix.target == 'js' || matrix.target == 'native'
+        run: python tools/external_roundtrip.py "${{ matrix.target }}"
+      - name: Instrumented coverage
+        if: matrix.target == 'wasm-gc'
+        run: |
+          moon test --deny-warn --enable-coverage
+          moon coverage report -- -f summary
