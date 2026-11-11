@@ -53,6 +53,7 @@ pub struct Model {
   // private fields
 }
 pub fn Model::bad_count(Self) -> Int32
+pub fn Model::check(Self, Int32, bad_index? : Int32, limits? : Limits) -> Result[Verdict, Diagnostic]
 pub fn Model::input_ports(Self) -> Array[Port]
 pub fn Model::node_count(Self) -> Int32
 pub fn Model::observe(Self, Frame) -> Result[Observation, Diagnostic]
@@ -115,6 +116,15 @@ pub(all) struct Trace {
 pub fn Trace::equal(Self, Self) -> Bool
 pub fn Trace::not_equal(Self, Self) -> Bool
 pub fn Trace::to_repr(Self) -> @debug.Repr
+
+pub(all) enum Verdict {
+  Counterexample(Trace)
+  BoundedSafe(Int32)
+  Unknown(String)
+} derive(Eq, @debug.Debug)
+pub fn Verdict::equal(Self, Self) -> Bool
+pub fn Verdict::not_equal(Self, Self) -> Bool
+pub fn Verdict::to_repr(Self) -> @debug.Repr
 
 // Type aliases
 

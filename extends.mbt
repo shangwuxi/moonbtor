@@ -50,3 +50,9 @@ pub extend SatResult with @debug.Debug::{to_repr}
 
 ///|
 pub extend SatResult with Eq::{equal, not_equal}
+
+///|
+pub extend Verdict with @debug.Debug::{to_repr}
+
+///|
+pub extend Verdict with Eq::{equal, not_equal}
