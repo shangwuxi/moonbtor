@@ -54,6 +54,7 @@ pub fn Model::bad_count(Self) -> Int32
 pub fn Model::input_ports(Self) -> Array[Port]
 pub fn Model::node_count(Self) -> Int32
 pub fn Model::observe(Self, Frame) -> Result[Observation, Diagnostic]
+pub fn Model::query(Self, Int32, bad_index? : Int32, limits? : Limits) -> Result[Query, Diagnostic]
 pub fn Model::replay(Self, Trace) -> Result[Unit, Diagnostic]
 pub fn Model::state_ports(Self) -> Array[Port]
 pub fn Model::step(Self, Frame, Array[UInt64], Array[UInt64]) -> Result[Frame, Diagnostic]
@@ -87,6 +88,13 @@ pub(all) struct Port {
 pub fn Port::equal(Self, Self) -> Bool
 pub fn Port::not_equal(Self, Self) -> Bool
 pub fn Port::to_repr(Self) -> @debug.Repr
+
+pub struct Query {
+  // private fields
+}
+pub fn Query::depth(Self) -> Int32
+pub fn Query::formula(Self) -> Formula
+pub fn Query::literals(Self, Int32, Int32) -> Array[Int32]?
 
 pub(all) struct Trace {
   frames : Array[Frame]
