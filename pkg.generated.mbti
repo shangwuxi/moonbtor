@@ -6,6 +6,7 @@ import {
 }
 
 // Values
+pub fn parse(String, limits? : ParseLimits) -> Result[Model, Diagnostic]
 
 // Errors
 type Failure derive(@debug.Debug)
