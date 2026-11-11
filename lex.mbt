@@ -1,22 +1,22 @@
 ///|
 /// Strip comments before splitting ASCII grammar whitespace.
-fn tokens(line : String) -> Array[String] {
+fn tokens(line : String, comments~ : Bool = true) -> Array[String] {
   let result : Array[String] = []
-  let mut word = StringBuilder()
+  let word = StringBuilder()
   for c in line {
-    if c == ';' {
+    if comments && c == ';' {
       break
     }
     if c == ' ' || c == '\t' || c == '\r' {
-      if word.to_string().length() > 0 {
+      if !word.is_empty() {
         result.push(word.to_string())
-        word = StringBuilder()
+        word.reset()
       }
     } else {
       word.write_char(c)
     }
   }
-  if word.to_string().length() > 0 {
+  if !word.is_empty() {
     result.push(word.to_string())
   }
   result

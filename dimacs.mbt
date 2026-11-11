@@ -56,7 +56,7 @@ pub fn parse_dimacs(
     let mut line = 0
     for raw in text.split("\n") {
       line += 1
-      let words = tokens(raw.to_owned())
+      let words = tokens(raw.to_owned(), comments=false)
       if words.is_empty() || words[0] == "c" {
         continue
       }
@@ -120,7 +120,7 @@ pub fn Formula::parse_assignment(
     let mut line = 0
     for raw in text.split("\n") {
       line += 1
-      let words = tokens(raw.to_owned())
+      let words = tokens(raw.to_owned(), comments=false)
       if words.is_empty() || words[0] == "c" {
         continue
       }
