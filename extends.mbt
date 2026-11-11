@@ -36,3 +36,11 @@ pub extend Trace with @debug.Debug::{to_repr}
 
 ///|
 pub extend Trace with Eq::{equal, not_equal}
+
+///|
+
+///|
+pub extend Limits with @debug.Debug::{to_repr}
+
+///|
+pub extend Limits with Eq::{equal, not_equal}

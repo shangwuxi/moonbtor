@@ -2,7 +2,7 @@
 /// Strip comments before splitting ASCII grammar whitespace.
 fn tokens(line : String) -> Array[String] {
   let result : Array[String] = []
-  let mut word = StringBuilder::new()
+  let mut word = StringBuilder()
   for c in line {
     if c == ';' {
       break
@@ -10,7 +10,7 @@ fn tokens(line : String) -> Array[String] {
     if c == ' ' || c == '\t' || c == '\r' {
       if word.to_string().length() > 0 {
         result.push(word.to_string())
-        word = StringBuilder::new()
+        word = StringBuilder()
       }
     } else {
       word.write_char(c)

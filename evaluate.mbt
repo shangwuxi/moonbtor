@@ -17,9 +17,9 @@ pub(all) struct Observation {
 ///|
 fn signed(value : UInt64, width : Int32) -> Int64 {
   if (value & (1UL << (width - 1))) != 0UL {
-    value.to_int64() - (1L << width)
+    value.reinterpret_as_int64() - (1L << width)
   } else {
-    value.to_int64()
+    value.reinterpret_as_int64()
   }
 }
 
@@ -81,11 +81,11 @@ fn eval_node(
           0UL
         }
       } else {
-        (signed(a, aw) >> b.to_int()).to_uint64()
+        (signed(a, aw) >> b.to_int()).reinterpret_as_uint64()
       }
     "slice" => a >> node.params[1]
     "uext" => a
-    "sext" => signed(a, aw).to_uint64()
+    "sext" => signed(a, aw).reinterpret_as_uint64()
     "concat" => (a << nodes[node.args[1]].width) | b
     "ite" => if a != 0UL { b } else { values[node.args[2]] }
     _ => node.value

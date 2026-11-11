@@ -21,6 +21,13 @@ pub fn Diagnostic::equal(Self, Self) -> Bool
 pub fn Diagnostic::not_equal(Self, Self) -> Bool
 pub fn Diagnostic::to_repr(Self) -> @debug.Repr
 
+pub struct Formula {
+  // private fields
+}
+pub fn Formula::clause(Self, Int32) -> Array[Int32]?
+pub fn Formula::clause_count(Self) -> Int32
+pub fn Formula::variable_count(Self) -> Int32
+
 pub(all) struct Frame {
   state : Array[UInt64]
   inputs : Array[UInt64]
@@ -28,6 +35,17 @@ pub(all) struct Frame {
 pub fn Frame::equal(Self, Self) -> Bool
 pub fn Frame::not_equal(Self, Self) -> Bool
 pub fn Frame::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Limits {
+  max_variables : Int32
+  max_clauses : Int32
+  max_steps : Int32
+  max_decisions : Int32
+} derive(Eq, @debug.Debug)
+pub fn Limits::default() -> Self
+pub fn Limits::equal(Self, Self) -> Bool
+pub fn Limits::not_equal(Self, Self) -> Bool
+pub fn Limits::to_repr(Self) -> @debug.Repr
 
 pub struct Model {
   // private fields
