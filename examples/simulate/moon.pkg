@@ -1,0 +1,5 @@
+import {
+  "shangwuxi/moonbtor",
+}
+
+pkgtype(kind: "executable")
