@@ -24,8 +24,10 @@ pub fn Diagnostic::to_repr(Self) -> @debug.Repr
 pub struct Formula {
   // private fields
 }
+pub fn Formula::accepts(Self, Array[Bool]) -> Bool
 pub fn Formula::clause(Self, Int32) -> Array[Int32]?
 pub fn Formula::clause_count(Self) -> Int32
+pub fn Formula::solve(Self, limits? : Limits) -> SatResult
 pub fn Formula::variable_count(Self) -> Int32
 
 pub(all) struct Frame {
@@ -95,6 +97,15 @@ pub struct Query {
 pub fn Query::depth(Self) -> Int32
 pub fn Query::formula(Self) -> Formula
 pub fn Query::literals(Self, Int32, Int32) -> Array[Int32]?
+
+pub(all) enum SatResult {
+  Satisfiable(Array[Bool])
+  Unsatisfiable
+  Indeterminate(String)
+} derive(Eq, @debug.Debug)
+pub fn SatResult::equal(Self, Self) -> Bool
+pub fn SatResult::not_equal(Self, Self) -> Bool
+pub fn SatResult::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Trace {
   frames : Array[Frame]

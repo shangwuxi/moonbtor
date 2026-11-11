@@ -44,3 +44,9 @@ pub extend Limits with @debug.Debug::{to_repr}
 
 ///|
 pub extend Limits with Eq::{equal, not_equal}
+
+///|
+pub extend SatResult with @debug.Debug::{to_repr}
+
+///|
+pub extend SatResult with Eq::{equal, not_equal}
