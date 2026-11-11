@@ -94,6 +94,7 @@ pub fn Port::to_repr(Self) -> @debug.Repr
 pub struct Query {
   // private fields
 }
+pub fn Query::decode(Self, Array[Bool]) -> Result[Trace, Diagnostic]
 pub fn Query::depth(Self) -> Int32
 pub fn Query::formula(Self) -> Formula
 pub fn Query::literals(Self, Int32, Int32) -> Array[Int32]?
