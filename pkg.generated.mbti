@@ -10,17 +10,24 @@ pub fn parse(String, limits? : ParseLimits) -> Result[Model, Diagnostic]
 
 // Errors
 type Failure derive(@debug.Debug)
+pub fn Failure::to_repr(Self) -> @debug.Repr
 
 // Types and methods
 pub(all) struct Diagnostic {
   line : Int32
   message : String
 } derive(Eq, @debug.Debug)
+pub fn Diagnostic::equal(Self, Self) -> Bool
+pub fn Diagnostic::not_equal(Self, Self) -> Bool
+pub fn Diagnostic::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Frame {
   state : Array[UInt64]
   inputs : Array[UInt64]
 } derive(Eq, @debug.Debug)
+pub fn Frame::equal(Self, Self) -> Bool
+pub fn Frame::not_equal(Self, Self) -> Bool
+pub fn Frame::to_repr(Self) -> @debug.Repr
 
 pub struct Model {
   // private fields
@@ -29,7 +36,9 @@ pub fn Model::bad_count(Self) -> Int32
 pub fn Model::input_ports(Self) -> Array[Port]
 pub fn Model::node_count(Self) -> Int32
 pub fn Model::observe(Self, Frame) -> Result[Observation, Diagnostic]
+pub fn Model::replay(Self, Trace) -> Result[Unit, Diagnostic]
 pub fn Model::state_ports(Self) -> Array[Port]
+pub fn Model::step(Self, Frame, Array[UInt64], Array[UInt64]) -> Result[Frame, Diagnostic]
 
 pub(all) struct Observation {
   next_state : Array[UInt64?]
@@ -37,6 +46,9 @@ pub(all) struct Observation {
   bad : Array[Bool]
   constraints_hold : Bool
 } derive(Eq, @debug.Debug)
+pub fn Observation::equal(Self, Self) -> Bool
+pub fn Observation::not_equal(Self, Self) -> Bool
+pub fn Observation::to_repr(Self) -> @debug.Repr
 
 pub(all) struct ParseLimits {
   max_lines : Int32
@@ -45,12 +57,26 @@ pub(all) struct ParseLimits {
   max_width : Int32
 } derive(Eq, @debug.Debug)
 pub fn ParseLimits::default() -> Self
+pub fn ParseLimits::equal(Self, Self) -> Bool
+pub fn ParseLimits::not_equal(Self, Self) -> Bool
+pub fn ParseLimits::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Port {
   id : Int32
   width : Int32
   symbol : String
 } derive(Eq, @debug.Debug)
+pub fn Port::equal(Self, Self) -> Bool
+pub fn Port::not_equal(Self, Self) -> Bool
+pub fn Port::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Trace {
+  frames : Array[Frame]
+  bad_index : Int32
+} derive(Eq, @debug.Debug)
+pub fn Trace::equal(Self, Self) -> Bool
+pub fn Trace::not_equal(Self, Self) -> Bool
+pub fn Trace::to_repr(Self) -> @debug.Repr
 
 // Type aliases
 

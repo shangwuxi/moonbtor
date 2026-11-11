@@ -26,8 +26,8 @@ fn parse_inner(text : String, limits : ParseLimits) -> Model raise Failure {
   let bad : Array[Int32] = []
   let constraints : Array[Int32] = []
   let outputs : Array[Int32] = []
-  let sorts : Map[Int32, Int32] = {}
-  let ids : Map[Int32, Int32] = {}
+  let sorts : Map[Int32, Int32] = Map([])
+  let ids : Map[Int32, Int32] = Map([])
   let mut previous = 0
   let mut line = 0
   for raw in text.split("\n") {
@@ -35,7 +35,7 @@ fn parse_inner(text : String, limits : ParseLimits) -> Model raise Failure {
     if line > limits.max_lines {
       fail(line, "line budget exceeded")
     }
-    let raw = raw.to_string()
+    let raw = raw.to_owned()
     if raw.length() > limits.max_line_length {
       fail(line, "line length exceeded")
     }
@@ -51,9 +51,6 @@ fn parse_inner(text : String, limits : ParseLimits) -> Model raise Failure {
       fail(line, "node IDs must be positive and strictly increasing")
     }
     previous = id
-    if line > limits.max_nodes + limits.max_lines {
-      fail(line, "instruction budget exceeded")
-    }
     let op = w[1]
     if op == "sort" {
       if w.length() != 4 || w[2] != "bitvec" {
