@@ -39,3 +39,11 @@ GitHub 指定账号隔离 helper 的实际 repository/code 搜索 `per_page=100`
 不是完整 BTOR2/SMT/无界证明工具：数组、fair/justice、活性、归纳证明、大规模工业 CDCL 和原生求解器 FFI 均不承诺。预算耗尽必须 Unknown，不能当安全。独立建设的理由是统一 BTOR2 验证、时帧展开、输入/状态归属和反例重放，而不是重做 BDD/SAT 基础库。实现前结论仅为：在已记录检索范围内未发现成熟直接替代。
 
 参考：[BTOR2](https://github.com/Boolector/btor2tools)、[官方清单](https://github.com/moonbitlang/awesome-moonbit)、[月饼](https://mooncakes.io/)。仅依据公开规格原创实现；未复制相邻项目或上游源码。
+
+## 发布前反向复查（2026-11-11）
+
+在同一隔离账号下再次请求 GitHub repository search：`BTOR2 language:MoonBit` 与 `bitblast language:MoonBit` 均为 0，`"trace replay" language:MoonBit` 为 3。后者包括 moonsim（确定性离散事件/故障模拟与测试框架）、MoonFFI Lab（原生 FFI 可靠性隔离与重放）及已检查的相邻验证工具；这些轨迹语义不包含 BTOR2 字级前端与 SAT 时间展开。读取公开 README，未执行第三方测试。
+
+MoonCakes `btor` 返回 0；`bitblast` 返回 `bobzhang/hol_light@0.1.0` 的 words 包。进一步检查该项目 README、words 公开接口及参考测试：它是 HOL Light 定理证明器移植，包含字理论、证明与转换工具；这与本项目具体同步转移、有限步 SAT 查询、DIMACS 赋值解码和具体反例重放的中心流程不同。没有将其“包含 bit-blasting”错误表述为不具备位向量能力。
+
+本轮结果与最初源码、接口、测试及官方清单交叉检查一致：在记录的公开检索范围内，没有发现中心流程等价的成熟 MoonBit 直接替代。检索有索引覆盖与时间限制，不是全生态唯一性证明；如后续发现直接替代，应重新评估整合与边界。
