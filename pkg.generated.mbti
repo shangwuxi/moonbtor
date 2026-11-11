@@ -8,6 +8,8 @@ import {
 // Values
 pub fn parse(String, limits? : ParseLimits) -> Result[Model, Diagnostic]
 
+pub fn parse_dimacs(String, limits? : Limits) -> Result[Formula, Diagnostic]
+
 // Errors
 type Failure derive(@debug.Debug)
 pub fn Failure::to_repr(Self) -> @debug.Repr
@@ -27,7 +29,9 @@ pub struct Formula {
 pub fn Formula::accepts(Self, Array[Bool]) -> Bool
 pub fn Formula::clause(Self, Int32) -> Array[Int32]?
 pub fn Formula::clause_count(Self) -> Int32
+pub fn Formula::parse_assignment(Self, String) -> Result[Array[Bool], Diagnostic]
 pub fn Formula::solve(Self, limits? : Limits) -> SatResult
+pub fn Formula::to_dimacs(Self) -> String
 pub fn Formula::variable_count(Self) -> Int32
 
 pub(all) struct Frame {
