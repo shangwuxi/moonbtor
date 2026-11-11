@@ -1,0 +1,43 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "shangwuxi/moonbtor"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+
+// Errors
+type Failure derive(@debug.Debug)
+
+// Types and methods
+pub(all) struct Diagnostic {
+  line : Int32
+  message : String
+} derive(Eq, @debug.Debug)
+
+pub struct Model {
+  // private fields
+}
+pub fn Model::bad_count(Self) -> Int32
+pub fn Model::input_ports(Self) -> Array[Port]
+pub fn Model::node_count(Self) -> Int32
+pub fn Model::state_ports(Self) -> Array[Port]
+
+pub(all) struct ParseLimits {
+  max_lines : Int32
+  max_line_length : Int32
+  max_nodes : Int32
+  max_width : Int32
+} derive(Eq, @debug.Debug)
+pub fn ParseLimits::default() -> Self
+
+pub(all) struct Port {
+  id : Int32
+  width : Int32
+  symbol : String
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+
+// Traits
