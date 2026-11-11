@@ -3,7 +3,7 @@
 fn main {
   try {
     let m = @moonbtor.parse(
-      "1 sort bitvec 3\n2 sort bitvec 1\n3 state 1 total\n4 input 1 amount\n5 zero 1\n6 init 1 3 5\n7 add 1 3 4\n8 next 1 3 7\n9 constd 1 5\n10 eq 2 3 9\n11 bad 10\n12 output 3",
+      "1 sort bitvec 3\n2 sort bitvec 1\n3 input 1 amount\n4 zero 1\n5 state 1 total\n6 init 1 5 4\n7 add 1 5 3\n8 next 1 5 7\n9 constd 1 5\n10 eq 2 5 9\n11 bad 10\n12 output 5",
     ).unwrap()
     let first : @moonbtor.Frame = { state: [0UL], inputs: [2UL], }
     let second = m.step(first, [3UL], []).unwrap()

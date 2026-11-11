@@ -12,11 +12,17 @@ pub fn parse(
 ///|
 fn parse_inner(text : String, limits : ParseLimits) -> Model raise Failure {
   if limits.max_lines <= 0 ||
+    limits.max_lines > 200000 ||
     limits.max_line_length <= 0 ||
+    limits.max_line_length > 65536 ||
     limits.max_nodes <= 0 ||
+    limits.max_nodes > 100000 ||
     limits.max_width < 1 ||
     limits.max_width > 32 {
     fail(0, "invalid parser limits")
+  }
+  if text.length() > 8000000 {
+    fail(0, "model text budget exceeded")
   }
   let nodes : Array[Node] = []
   let states : Array[Int32] = []
@@ -97,6 +103,10 @@ fn parse_inner(text : String, limits : ParseLimits) -> Model raise Failure {
         nodes[target].width != width ||
         nodes[source].width != width {
         fail(line, "init/next require a state and equally sized expression")
+      }
+      if op == "init" &&
+        (nodes[source].id >= nodes[target].id || nodes[source].input_dependent) {
+        fail(line, "init source must precede state and cannot depend on input")
       }
       let list = if op == "init" { initial } else { updates }
       for pair in list {
@@ -207,7 +217,9 @@ fn parse_inner(text : String, limits : ParseLimits) -> Model raise Failure {
     let symbol = if w.length() > count { w[count] } else { "" }
     let index = nodes.length()
     ids[id] = index
-    nodes.push({ id, op, width, args, params, value, symbol, })
+    let input_dependent = op == "input" ||
+      args.any(i => nodes[i].input_dependent)
+    nodes.push({ id, op, width, args, params, value, symbol, input_dependent, })
     if op == "state" {
       states.push(index)
     }

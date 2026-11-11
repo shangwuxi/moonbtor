@@ -51,6 +51,13 @@ pub fn Model::query(
     if bad_index < 0 || bad_index >= self.bad.length() {
       fail(0, "bad property index out of range")
     }
+    let mut bits = 0
+    for node in self.nodes {
+      bits += node.width
+    }
+    if bits > 1000000 / (depth + 1) {
+      fail(0, "frame bit allocation budget exhausted")
+    }
     let encoder = Encoder::new(limits)
     let frames : Array[Array[Array[Int32]]] = []
     for t = 0; t <= depth; t = t + 1 {

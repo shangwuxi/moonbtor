@@ -63,6 +63,54 @@ def sat():
         lines.append('test "independent SAT enumeration %d" {\n let f = @moonbtor.parse_dimacs("%s").unwrap()\n match f.solve() {\n Satisfiable(bits) => { assert_true(%s); assert_true(f.accepts(bits)) }\n Unsatisfiable => assert_true(%s)\n Indeterminate(_) => fail("unexpected oracle resource exhaustion")\n }\n}'%(i,escaped,str(expected).lower(),str(not expected).lower()))
     (ROOT/'oracle_sat_test.mbt').write_text('\n\n'.join(lines)+'\n',encoding='utf-8')
 
+
+def canonical(source):
+    import heapq
+    lines=source.split('\n')
+    records=[]
+    for line in lines:
+        words=line.split()
+        if not words or not words[0].isdigit():return source
+        records.append(words)
+    ids={int(w[0]):i for i,w in enumerate(records)}
+    dependencies=[set() for _ in records]
+    positions=[]
+    unary={'not','neg','inc','dec','redand','redor','redxor','slice','uext','sext'}
+    noargs={'input','state','zero','one','ones','const','consth','constd'}
+    properties={'bad','constraint','output','fair'}
+    previous_state=None
+    for i,w in enumerate(records):
+        op=w[1]
+        if op=='sort':refs=[]
+        elif op in properties:refs=[2]
+        elif op in noargs:refs=[2]
+        elif op in unary:refs=[2,3]
+        elif op=='ite':refs=[2,3,4,5]
+        else:refs=[2,3,4]
+        if any(j>=len(w) or not w[j].isdigit() or int(w[j]) not in ids for j in refs):return source
+        positions.append(refs)
+        dependencies[i].update(ids[int(w[j])] for j in refs)
+        if op=='state':
+            if previous_state is not None:dependencies[i].add(previous_state)
+            previous_state=i
+        if op=='init':dependencies[ids[int(w[3])]].add(ids[int(w[4])])
+    ready=[i for i,d in enumerate(dependencies) if not d];heapq.heapify(ready)
+    order=[]
+    while ready:
+        i=heapq.heappop(ready);order.append(i)
+        for j,d in enumerate(dependencies):
+            if i in d:
+                d.remove(i)
+                if not d:heapq.heappush(ready,j)
+    if len(order)!=len(records):return source
+    mapping={int(records[i][0]):n+1 for n,i in enumerate(order)}
+    result=[]
+    for i in order:
+        w=records[i][:];w[0]=str(mapping[int(w[0])])
+        for j in positions[i]:w[j]=str(mapping[int(w[j])])
+        result.append(' '.join(w))
+    return '\n'.join(result)
+
 def bmc():
     lines=['// Python reachable-set exploration; no SAT or MoonBit evaluator used.']
     for initial,target,forbidden in product([0,3],range(8),[-1,4]):
@@ -75,7 +123,7 @@ def bmc():
             reachable={(x+u)&7 for x in reachable for u in [0,1]}
         source='1 sort bitvec 3\n2 sort bitvec 1\n3 state 1 x\n4 input 1 u\n5 constd 1 %d\n6 init 1 3 5\n7 add 1 3 4\n8 next 1 3 7\n9 constd 1 %d\n10 eq 2 3 9\n11 bad 10\n12 constd 1 1\n13 ulte 2 4 12\n14 constraint 13'%(initial,target)
         if forbidden>=0:source+='\n15 constd 1 %d\n16 neq 2 3 15\n17 constraint 16'%forbidden
-        escaped=source.replace('\n','\\n')
+        escaped=canonical(source).replace('\n','\\n')
         result='assert_eq(result,@moonbtor.BoundedSafe(5))' if found is None else 'match result { Counterexample(t) => { assert_eq(t.frames.length(),%d); assert_true(model.replay(t) is Ok(_)) }; _ => fail("expected reachable bad state") }'%(found+1)
         lines.append('test "Python reachability init%d target%d forbidden%d" {\n let model = @moonbtor.parse("%s").unwrap()\n let result = model.check(5).unwrap()\n %s\n}'%(initial,target,forbidden,escaped,result))
     (ROOT/'oracle_bmc_test.mbt').write_text('\n\n'.join(lines)+'\n',encoding='utf-8')

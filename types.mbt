@@ -25,6 +25,7 @@ priv struct Node {
   params : Array[Int32]
   value : UInt64
   symbol : String
+  input_dependent : Bool
 }
 
 ///|

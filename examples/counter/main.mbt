@@ -3,7 +3,7 @@
 fn main {
   try {
     let model = @moonbtor.parse(
-      "1 sort bitvec 2\n2 sort bitvec 1\n3 state 1 count\n4 zero 1\n5 init 1 3 4\n6 inc 1 3\n7 next 1 3 6\n8 constd 1 3\n9 eq 2 3 8\n10 bad 9 overflow",
+      "1 sort bitvec 2\n2 sort bitvec 1\n3 zero 1\n4 state 1 count\n5 init 1 4 3\n6 inc 1 4\n7 next 1 4 6\n8 constd 1 3\n9 eq 2 4 8\n10 bad 9 overflow",
     ).unwrap()
     assert_eq(model.check(2).unwrap(), @moonbtor.BoundedSafe(2))
     match model.check(5).unwrap() {
