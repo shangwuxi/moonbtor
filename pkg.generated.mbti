@@ -17,13 +17,26 @@ pub(all) struct Diagnostic {
   message : String
 } derive(Eq, @debug.Debug)
 
+pub(all) struct Frame {
+  state : Array[UInt64]
+  inputs : Array[UInt64]
+} derive(Eq, @debug.Debug)
+
 pub struct Model {
   // private fields
 }
 pub fn Model::bad_count(Self) -> Int32
 pub fn Model::input_ports(Self) -> Array[Port]
 pub fn Model::node_count(Self) -> Int32
+pub fn Model::observe(Self, Frame) -> Result[Observation, Diagnostic]
 pub fn Model::state_ports(Self) -> Array[Port]
+
+pub(all) struct Observation {
+  next_state : Array[UInt64?]
+  outputs : Array[UInt64]
+  bad : Array[Bool]
+  constraints_hold : Bool
+} derive(Eq, @debug.Debug)
 
 pub(all) struct ParseLimits {
   max_lines : Int32
