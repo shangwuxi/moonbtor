@@ -1,0 +1,6 @@
+import {
+  "shangwuxi/moonbtor",
+  "moonbitlang/core/env",
+}
+
+pkgtype(kind: "executable")

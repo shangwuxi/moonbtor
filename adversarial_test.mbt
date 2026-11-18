@@ -47,7 +47,7 @@ test "replay rejects tampered inputs constraints and JSON numeric forms" {
     m.replay({ frames: [{ state: [], inputs: [0UL], }], bad_index: 0, })
     is Err(_),
   )
-  for value in ["-1", "4294967296", "1x", ""] {
+  for value in ["-1", "18446744073709551616", "1x", ""] {
     let text = "{\"version\":1,\"bad_index\":0,\"frames\":[{\"state\":[],\"inputs\":[\"\{value}\"]}]}"
     assert_true(@moonbtor.parse_trace(text) is Err(_))
   }
