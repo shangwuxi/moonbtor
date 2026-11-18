@@ -27,6 +27,7 @@ jobs:
       - name: Regenerate independent oracles and inspect interfaces
         run: |
           python tools/generate_oracles.py
+          python tools/generate_standard_oracles.py
           moon info
           moon fmt
           moon fmt --check
@@ -41,9 +42,16 @@ jobs:
           moon run examples/counter --target "${{ matrix.target }}" --deny-warn
           moon run examples/simulate --target "${{ matrix.target }}" --deny-warn
           moon run examples/external --target "${{ matrix.target }}" --deny-warn
+          moon run examples/memory --target "${{ matrix.target }}" --deny-warn
+          moon run examples/lasso --target "${{ matrix.target }}" --deny-warn
       - name: External solver integration through independent Python enumeration
         if: matrix.target == 'js' || matrix.target == 'native'
         run: python tools/external_roundtrip.py "${{ matrix.target }}"
+      - name: Z3 independent standard and array interoperability
+        if: matrix.target == 'js'
+        run: |
+          python -m pip install z3-solver==4.15.4.0
+          python tools/z3_interop.py js
       - name: Instrumented coverage
         if: matrix.target == 'wasm-gc'
         run: |

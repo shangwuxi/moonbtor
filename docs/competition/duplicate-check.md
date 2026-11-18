@@ -34,7 +34,7 @@ GitHub 指定账号隔离 helper 的实际 repository/code 搜索 `per_page=100`
 
 永久注册表完整标题与相关指纹已读取：MoonBench、MoonContract、MoonRecur、MoonShard、MoonSPDX/MoonPolicyProof、MoonPetri、MoonConcept、MoonWFST、MoonZDD 等全部保持保留；无状态机文件/字级时序展开核心重合。注册表使用同目录 share-none 独占锁、锁内重新读取、临时文件和原子替换；首次 Replace 空备份参数失败未写入，重读后带非空仓库外备份成功，不覆盖并发更新。
 
-## 交付边界
+## 初版交付边界（历史记录，当前范围见 compatibility.md）
 
 不是完整 BTOR2/SMT/无界证明工具：数组、fair/justice、活性、归纳证明、大规模工业 CDCL 和原生求解器 FFI 均不承诺。预算耗尽必须 Unknown，不能当安全。独立建设的理由是统一 BTOR2 验证、时帧展开、输入/状态归属和反例重放，而不是重做 BDD/SAT 基础库。实现前结论仅为：在已记录检索范围内未发现成熟直接替代。
 
@@ -47,3 +47,9 @@ GitHub 指定账号隔离 helper 的实际 repository/code 搜索 `per_page=100`
 MoonCakes `btor` 返回 0；`bitblast` 返回 `bobzhang/hol_light@0.1.0` 的 words 包。进一步检查该项目 README、words 公开接口及参考测试：它是 HOL Light 定理证明器移植，包含字理论、证明与转换工具；这与本项目具体同步转移、有限步 SAT 查询、DIMACS 赋值解码和具体反例重放的中心流程不同。没有将其“包含 bit-blasting”错误表述为不具备位向量能力。
 
 本轮结果与最初源码、接口、测试及官方清单交叉检查一致：在记录的公开检索范围内，没有发现中心流程等价的成熟 MoonBit 直接替代。检索有索引覆盖与时间限制，不是全生态唯一性证明；如后续发现直接替代，应重新评估整合与边界。
+
+## 标准语义扩展复查（2026-11-18）
+
+本轮是同一仓库的 0.2.0 实质功能扩展，不是重新选题、改名或复用另一个项目。0.1.0 的数组/除余排除项不再作为最终目标；新增标准位向量、非嵌套数组和公平闭环工作流，资源及尚未完成部分见 docs/compatibility.md。
+
+重新执行账号隔离的 GitHub repository search：BTOR2 language:MoonBit 命中本项目自身，bitblast language:MoonBit 无结果。MoonCakes btor 命中本项目 0.1.0；bitblast 仍含 hol_light 词理论能力。检索是当前索引的有界证据，不是无同类保证。相邻 SAT/BDD/CTL/HOL 库继续适合协作或作为后端；本轮增加格式语义、具体数组时序执行及独立反例重放，未把通用证明器重新包装成自创算法。原先逐源码/测试/API 的能力差异矩阵仍适用。

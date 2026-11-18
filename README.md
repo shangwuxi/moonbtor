@@ -2,41 +2,42 @@
 
 [![验证](https://github.com/shangwuxi/moonbtor/actions/workflows/ci.yml/badge.svg)](https://github.com/shangwuxi/moonbtor/actions/workflows/ci.yml)
 
-MoonBTOR 将 **BTOR2 的位向量安全片段**转成可执行的同步状态模型和有界 SAT 查询。它供硬件/嵌入式开发者定位有限步内的错误，供工具集成者导出 DIMACS 并重放求解结果，也供教学与测试系统逐帧执行模型。实现主要使用 MoonBit，无第三方 SAT 运行依赖。
+MoonBTOR 是用 MoonBit 实现的 BTOR2 状态模型执行与有界验证库。面向硬件模型调试、外部 SAT 工具集成、教学及测试系统，提供类型检查、精确位向量与数组执行、时序展开、DIMACS、反例解码和独立重放。
 
-查询返回最短反例、`BoundedSafe(k)` 或 `Unknown(reason)`。**`BoundedSafe(k)` 仅表示 0 到 k 帧内没有符合约束的所选 bad 状态，不是无界证明。** 反例先核对每个 CNF 子句，再通过独立具体求值器检查初始化、每次同步更新、每帧约束和末帧 bad。
+**0.2.0 不再将数组、除余或溢出谓词排除在项目目标之外**：已实现非嵌套数组、标准位向量算子、负引用，以及 fair/justice 的有限闭环查询。长期目标是对齐常用 BTOR2 标准输入与工作流；当前实现边界和资源上限见[兼容矩阵](docs/compatibility.md)，不声称无条件兼容所有模型或完成无界证明。
 
-## 安装
+## 安装与环境
 
-模块：[`shangwuxi/moonbtor@0.1.0`](https://mooncakes.io/docs/shangwuxi/moonbtor)。需要官方 MoonBit，`moonc >= 0.10.16`；本版本固定验证 `0.10.18+6c83a7f62`（moon `0.1.20261028`）。旧编译器可能不支持当前 `moon.mod` / `moon.pkg` 语法。
-
-在自己的 MoonBit 工程中执行：
+模块：[`shangwuxi/moonbtor@0.2.0`](https://mooncakes.io/docs/shangwuxi/moonbtor)。要求 `moonc >= 0.10.16`，固定验收工具链 `moonc 0.10.18+6c83a7f62`、moon `0.1.20261028`。
 
 ```sh
-moon add shangwuxi/moonbtor@0.1.0
+moon add shangwuxi/moonbtor@0.2.0
 ```
 
-在消费者的 `moon.pkg` 添加：
+在消费者 `moon.pkg` 导入：
 
 ```moonbit
 import {
   "shangwuxi/moonbtor",
 }
+pkgtype(kind: "executable")
 ```
 
-默认与推荐目标为 `wasm-gc`；支持 `wasm`、`js`、`native`。JS 需要 Node.js；原生目标需要 MoonBit 支持的 C 编译环境。Linux 四目标由公开 CI 验证，具体工具链以 CI 配置为准。
+支持 `wasm-gc`（默认）、`wasm`、`js` 和 `native`；JS 需要 Node.js，native 需要支持的 C 编译环境。Linux 四目标由 CI 检查。生产库没有第三方 SAT 或 Python/Z3 运行依赖。
 
-## 快速开始
+## 可复现快速开始
 
 ```sh
 git clone https://github.com/shangwuxi/moonbtor.git
 cd moonbtor
 moon run examples/counter
+moon run examples/memory
+moon run examples/lasso
 moon run examples/simulate
-moon run examples/external
+python tools/external_roundtrip.py js
 ```
 
-计数器输出状态 `0,1,2,3`、反例 JSON 与 `shortest bad frame = 3`。以下是可直接放入消费者 `main.mbt` 的完整程序：
+以下完整 `main.mbt` 可直接在消费者运行，输出第 3 帧到达 bad 的计数器反例：
 
 ```moonbit
 fn main {
@@ -51,84 +52,79 @@ fn main {
 }
 ```
 
-`examples/counter` 中的断言确认较短界限 2 是 `BoundedSafe(2)`，界限 5 找到末帧为 3 的反例。状态在每帧开头观察；深度 0 就检查初始帧。多个 `bad` 按声明顺序选择：`model.check(5, bad_index=1)`；默认选择第 0 个，空 bad 列表返回 API 错误。
+`check` 返回最短反例、`BoundedSafe(k)` 或 `Unknown(reason)`。**BoundedSafe 仅表示 0..k 帧内没有符合约束的所选 bad，不是无界安全证明。** 多个 bad 按声明顺序选择，默认第 0 项，例如 `model.check(5, bad_index=1)`。深度 0 检查初始帧。
 
-## 三个完整工作流
+## 三个完整场景
 
-|使用者与输入|处理|输出与可运行入口|
+|使用者及输入|处理过程|结果和入口|
 |---|---|---|
-|硬件工程师的计数器 BTOR2 文件内容|语法/类型检查、逐帧展开、有限资源求解、具体重放|最短越界轨迹与 JSON，`examples/counter`|
-|工具集成者的状态模型与外部 SAT 结果|导出实际 DIMACS；严格校验 SAT 赋值；解码输入和状态；再求值|可重放反例，`examples/export`、`examples/external` 与 `tools/external_roundtrip.py`|
-|教学/测试系统的逐拍输入序列|`observe`、同步 `step`、JSON 往返、初值/转移/约束复核|累加器状态 `0,2,5`，跳帧篡改被拒绝，`examples/simulate`|
+|硬件工程师输入包含存储器的 BTOR2 模型|数组完整地址域位展开，求解初始化、读写和同步 next|找到 1 步存储器 bad；typed 解码并独立重放，`examples/memory`|
+|验证工具集成者输入状态模型及外部 SAT 结果|导出 DIMACS，逐子句核验完整赋值，解码输入/状态，再具体执行|可重放反例；`examples/export`、`examples/external`、`tools/z3_interop.py`|
+|教学或测试系统输入逐拍赋值或公平条件|具体求值与同步更新；或构建 fair/justice 闭环查询|累加器逐帧结果、篡改拒绝、0→1→0 公平闭环；`examples/simulate`、`examples/lasso`|
 
-### 具体执行
+## 数据与 API
 
-`Frame { state, inputs }` 数组按 `state_ports()` / `input_ports()` 的声明顺序赋值。`observe(frame)` 返回模算术后的输出、bad 真值、约束是否成立及 `next_state`。它只观察，不自动强制初始条件或约束。
+### 具体执行和类型
 
-`step(frame, next_inputs, free_next)` 同时计算所有有 `next` 的状态。`free_next` 依次为没有 `next` 的状态提供下一帧值，缺失或多余都报错。没有 `init` 的状态初始值、没有 `next` 的状态后继值是**非确定的**，不会被默认为零或保持。`replay(trace)` 才负责完整轨迹的合法性；它要求末帧所选 bad 为真，不要求此前 bad 为假。
+- `parse(text)` / `parse_with_limits(text, limits)` 做语法、引用、位宽及 sort 检查，错误返回包含行号的 Diagnostic。
+- `typed_state_ports()` / `typed_input_ports()` 返回位宽、索引位宽、原节点 ID 和名称。普通位向量的 `index_width=0`。
+- `TypedFrame { state, inputs }` 中每个端口是一组低位优先 `Array[Bool]`；数组按无符号地址从小到大连接各元素，每元素低位在前。**完整表示全部地址，不抽样、不哈希近似。**
+- `observe_typed(frame)` 返回 outputs、next_state、bad、constraints_hold、fair 和 justice；`step_typed(frame, next_inputs, free_next)` 做同步更新。
+- 缺少 init 的状态初值非确定，缺少 next 的状态后继非确定，不擅自假设零或保持。`free_next` 为无 next 状态依次指定后继。
+- 兼容 API `Frame` / `observe` / `step` / `check` / `Trace` 只接受**整个模型非数组且位宽不超过 64**，超出返回错误而非截断。`check_typed`、`TypedTrace` 支持数组和宽位向量。
 
-### 外部求解器集成
+### 有界安全及外部求解
 
-```sh
-moon run examples/export --target js --quiet > query.cnf
-python tools/external_roundtrip.py js
-```
+`model.query(depth)` 构建有限安全查询，`query.formula().to_dimacs()` 导出 CNF，`formula.parse_assignment(text)` 读取外部 SAT 输出，`query.decode_typed(bits)` 先检查所有 CNF 子句，再独立重放 init、next、constraint 和末帧 bad。`query.literals(frame, node_id)` 返回指定节点低位优先 literals 的副本。
 
-第二条命令读取实际导出的 CNF，用独立 Python 穷举求解，再通过子进程环境将 SAT 输出交给 MoonBit 检查。只适用于该小样例（4 个变量），不替代工业求解器。实际集成可用 `query.formula().to_dimacs()`、`formula.parse_assignment(output)`、`query.decode(bits)`；`query.literals(frame, node_id)` 返回原 BTOR2 节点在对应帧的低位优先 literal 副本。
+SAT 文本必须包含一行 `s SATISFIABLE` 和以 `0` 结束的 `v` 赋值，每个变量恰好出现一次；部分/重复/越界赋值、UNKNOWN、UNSAT 都不是可解码反例。`tools/external_roundtrip.py` 是小实例独立枚举流程，不是工业求解器。
 
-接受的外部结果格式为一行 `s SATISFIABLE` 加一到多行 `v`，整个赋值以 `0` 结束；每个变量必须恰好出现一次。`UNSATISFIABLE` / `UNKNOWN` 不是反例，不能传入此解码器。部分赋值、重复变量、越界、未终止或不满足子句均被拒绝。求解器通过 `MOONBTOR_ASSIGNMENT` 传结果的例子只用于集成演示。
+`check_typed(depth)` 使用内置有预算 DPLL。预算耗尽返回 Unknown，不冒充 UNSAT；大模型建议导出外部求解，但构建 CNF 同样有上限。
 
-### 反例文件
+### fair / justice
 
-`trace.to_json_string()` 与 `parse_trace(text)` 使用本项目 schema v1，**不是标准 BTOR2 witness 文件格式**。`state`、`inputs` 的整数编码为十进制字符串，避免其他 JSON 消费者的数字精度问题：
+`lasso_query(depth, loop_start, justice_index=Some(0))` 要求末帧状态等于指定循环起始帧，循环区间 `[loop_start, depth)` 内每个 fair 及所选 justice 组的每项目标至少出现一次。`decode_typed` / `replay_typed` 验证闭环条件。
 
-```json
-{"version":1,"bad_index":0,"frames":[{"state":["0"],"inputs":[]}]}
-```
+**它寻找满足公平与 justice 条件的有限闭环，不是寻找 justice 违反，不是通用 LTL 或无界活性证明。** 含 fair/justice 的模型必须显式选择该接口，普通安全 query 拒绝，避免悄悄丢弃条件。
 
-JSON 解析只验证格式和边界；必须继续调用相应模型的 `replay`。帧以数组次序编号，最多 65 帧，值必须是 0..4294967295 的字符串。字段缺失、额外字段、重复键、负数、数字类型取代字符串均被拒绝。
+### 轨迹格式
 
-## 支持的 BTOR2 片段
+`Trace.to_json_string()` / `parse_trace()` 是本项目 schema v1，只服务非数组、至多 64 位无符号标量；十进制值精确保留。TypedTrace 目前使用内存 API，没有文件序列化器。**schema v1 不是标准 BTOR2 witness，不宣称标准 witness 文件互通。**
 
-- `sort bitvec`，宽度 1–32，正且严格递增的 ID（不超过 2147483647），只引用已定义节点。
-- `input`、`state`、`init`、`next`、`bad`、`constraint`、`output`。
-- 常量 `const` / `constd` / `consth`、`zero` / `one` / `ones`。
-- `not neg inc dec redand redor redxor`；`and or xor nand nor xnor`；`add sub mul`。
-- `eq neq ult ulte ugt ugte slt slte sgt sgte`；`sll srl sra`；`iff implies ite`；`concat slice uext sext`。
-- 行尾 `;` 注释、可选单个符号、CRLF。相同宽度的 bitvec sort 等价。
+## 标准语义与运行边界
 
-所有算术按声明宽度截断。有符号比较使用补码；大于等于位宽的逻辑移位为零，算术右移填符号位。`init` 的来源 ID 必须严格小于状态 ID，且其表达式不能直接或间接依赖输入；每个状态最多一个 `init` 和一个 `next`。
+非嵌套数组 sort、读/写、数组 ite/eq/neq、数组 init/next；标准模算术、比较、移位、拼接/切片/扩展、旋转、除余及全部溢出谓词均有具体执行和 CNF 实现。除零、带符号最小值溢出、srem 与 smod 符号差异按 SMT 位向量语义处理。
 
-明确不支持：数组、负引用 ID、64 位及任意精度向量、除法/余数、旋转、溢出谓词、fair/justice/活性、标准 BTOR2 witness、归纳/无界证明、Verilog/SMT 编译、CDCL、原生求解器绑定。遇到不支持的标签返回带行号诊断，不静默降级。完整硬件验证请使用成熟专用工具。
+默认解析位宽上限 4096，行长 16384；数组完整展平最多 1000000 位，运算估计最多 20000000 工作单位，另有节点、CNF、深度、DPLL 预算。大地址域/大乘除模型可解析但在执行或构建时明确拒绝。它们是资源保护，不是可求解规模承诺。嵌套数组、浮点、标准 witness 文件和无界证明尚未实现。详见[兼容矩阵](docs/compatibility.md)与[架构](docs/architecture.md)。
 
-## 资源与错误
-
-`ParseLimits` 默认最大 20,000 行、每行 4,096 字符、10,000 值节点、32 位；文本硬上限 8,000,000 字符。`Limits` 默认 50,000 SAT 变量、200,000 子句、每个 exact-frame 查询 2,000,000 次扫描步骤、96 层决策；硬上限见 [cnf.mbt](cnf.mbt)。单次查询深度 0–64，总展开位数不超过 1,000,000。
-
-分配或求解预算耗尽时 `check` 返回 `Unknown`；参数错误返回 `Err(Diagnostic)`。DPLL 递归最多 128 层，工作预算在两个分支之间共享。检查界限 k 会从 0 到 k 构建独立查询，每次具有新的工作预算；这是最短反例策略，不是增量 SAT。相同界限与约束下的全部失败才得到 `BoundedSafe`；约束不可满足时结论可能空真，不表示系统有可达执行。
-
-## 开发与复现
+## 开发与验收
 
 ```sh
+python tools/generate_oracles.py
+python tools/generate_standard_oracles.py
 moon info
+moon fmt
 moon fmt --check
 moon check --deny-warn
 moon build --deny-warn
 moon test --deny-warn
-python tools/generate_oracles.py
-moon fmt
-moon test --deny-warn
-python tools/external_roundtrip.py js
+moon test --target js --deny-warn
+moon test --enable-coverage --deny-warn
+moon coverage report -- -f summary
 ```
 
-用 `--target wasm` / `js` / `native` 重复检查、构建、测试和例子。[CI](.github/workflows/ci.yml) 固定官方编译器与 core 的版本及 SHA256，重建独立参考，检查接口和格式，执行四目标检查/构建/测试、三个用户流程、JS/原生外部求解往返以及 wasm-gc 插桩覆盖率。
+新增标准算子覆盖 1876 组独立 Python 数值样本，14 类算子、1/3/32/64 位；其中 952 组 1/3 位样本额外验证正确 CNF 可满足、错误结果不可满足和 typed 重放。32/64 位样本仅做具体值对照，不能混称全量符号验证。保留旧版算术、枚举可达性及对抗输入回归。
 
-目前 293 项测试包括 2,599 组独立 Python 整数参考（每组同时验证具体结果、正确结果 CNF 可满足及错误结果不可满足）、180 个独立穷举 SAT 实例和 32 个独立可达状态系统。另有布尔门完整真值表、边界语法、32 位溢出、符号移位、预算、初始化和反例篡改测试。生成测试不计核心代码量；未对生产规模模型性能作保证。
+可选开发互通检查（Z3 不进入运行包）：
 
-源码布局：根目录 `.mbt` 是可复用引擎；`*_test.mbt` 为外部 API 测试，`*_wbtest.mbt` 为门级测试；`examples/` 是可运行集成；`tools/` 为独立参考及工程工具；[架构](docs/architecture.md) 解释信任边界；[查重记录](docs/competition/duplicate-check.md) 记录有范围限制的生态检索。
+```sh
+python -m pip install z3-solver==4.15.4.0
+python tools/z3_interop.py js
+python tools/upstream_compat.py PRIVATE_EVIDENCE_DIRECTORY
+```
 
-## 许可证与来源
+Z3 脚本独立核对全部 1876 组预期值，并实际完成存储器 CNF→Z3→typed 解码→重放。PRIVATE_EVIDENCE_DIRECTORY 须替换为仓库外路径。上游脚本固定 btor2tools 提交，仅检查上游例子解析，不等同完整求解兼容。测试层次与限制见[验证说明](docs/validation.md)。
 
-MIT，见 [LICENSE](LICENSE)。原创实现参考公开 [BTOR2/btor2tools](https://github.com/Boolector/btor2tools) 语法与解析约束；没有复制上游或相邻项目实现，没有捆绑第三方模型数据。详见 [NOTICE.md](NOTICE.md)。相邻的 SAT/BDD/CTL 项目可用于合作或替换求解后端，本项目的中心是 BTOR2 字级转移语义、时间展开和反例重放，未声称发明 SAT 算法或生态唯一。
+## 许可证、参考与 AI
 
-AI 参与调研、代码、测试、调试、文档和工程配置；测试可复现，支持范围以本 README 和公开接口为准。本项目尚无形式化认证或已确认客户部署。工程交付不代表比赛官方验收或报名资格认定。
+本项目采用 [MIT](LICENSE)。BTOR2 格式参考 [Boolector/btor2tools](https://github.com/Boolector/btor2tools)，位向量运算参考 [SMT-LIB FixedSizeBitVectors](https://smt-lib.org/theories-FixedSizeBitVectors.shtml)。未复制上游解析器或 SAT 实现；上游模型只在仓库外用于互通验证，其许可单独保留。实现与测试由 AI 辅助编写，技术责任和验证记录归本项目；来源及范围见 [NOTICE.md](NOTICE.md)。

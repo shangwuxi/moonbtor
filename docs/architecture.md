@@ -1,14 +1,13 @@
-# 架构与语义
+# 架构
 
-`parse -> Model -> observe/step/replay` 是具体路径；`Model.query -> Formula -> solve/外部 SAT -> Query.decode -> replay` 是符号路径。
-解析阶段生成按 ID 拓扑排序的私有节点数组，引用转成索引，记录宽度和传递输入依赖。外部只能取得新分配的端口元数据，无法改变模型。
+1. parser / typed_parser / lex：顺序读取 BTOR2，检查 sort、引用与端口，常量变成低位优先位序列；负引用共享合成 not 节点。
+2. types：不可外部构造的模型内部节点和公开端口/帧；数组携带元素宽和地址宽，完整展平有分配预算。
+3. concrete_words / typed_evaluate：具体 Bool 数组运算、恢复除法、带符号修正、数组读写；不调用符号电路。
+4. cnf / arithmetic / division / blast：逐节点精确位展开，Tseitin 门电路、桶式移位、除余及溢出电路；与具体计算代码分离。
+5. query / lasso：初值、同步转移、逐帧约束及目标选择。lasso 末状态闭环并覆盖 fair/justice，不是无界活性证明。
+6. solver / bmc / typed_bmc：有预算 DPLL；逐深度查找最短有限安全反例，预算耗尽返回 Unknown。
+7. decode / typed_replay：先核验全部 CNF，再将赋值解码为 typed 端口，独立重放每次转移及目标；标量 API 和 schema v1 是受限兼容层。
 
-CNF 使用低位优先 literal 数组。变量 1 被单子句设为真，-1 为假，否定无需新门。其他变量从 2 起分配。常量/拼接/切片/扩展复用 literal，乘法只构建最终位宽内的部分积，移位使用逐层选择。
-每帧状态和输入各有独立变量；初帧加入 init 等式，相邻帧加入所有 next 等式，每个前缀帧都加入 constraint，最后一帧加入所选 bad。
-不存在 init/next 的状态保持自由，没有默认赋值。每个 exact-frame 查询独立构建，避免未来约束阻止提前结束的有效反例。
+公开 API 由 pkg.generated.mbti 检查；用户端口/帧数组不被执行器修改，返回值不暴露内部 CNF 可变存储。运行依赖仅 MoonBit 标准库。Python、Z3、上游模型只用于开发验证。
 
-求解器仅为小型有界 DPLL，单位传播后对尚未满足子句中的变量做确定性分支。只有两个分支都明确冲突才 UNSAT；预算中止立即 Unknown。工作量计数贯穿分支，决策深度限制避免不受控递归。
-`Formula.accepts` 完整求值所有子句；`Query.decode` 从 literal 还原状态/输入，然后调用不依赖 CNF 门实现的具体求值器进行重放。这能发现编码与解码错误，但不能构成形式化正确性证明。
-
-测试参考是独立 Python 整数运算、SAT 穷举、可达集合探索；生成工具不调用 MoonBit 求值器生成预期值。特别验证了正向 CNF SAT 和反向结果 CNF UNSAT，避免只验证存在一个正确赋值。
-未把未运行的第三方源码/测试阅读当作通过证据。性能预算是确定性计数上限，并非墙钟时间 SLA。
+详细输入覆盖、非目标和资源限制见 compatibility.md；验证证据层次见 validation.md。
