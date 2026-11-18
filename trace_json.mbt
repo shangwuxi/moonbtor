@@ -39,7 +39,7 @@ fn json_values(value : Json, line : Int32) -> Array[UInt64] raise Failure {
             if word.has_prefix("-") {
               fail(line, "trace values must be unsigned")
             }
-            out.push(constant(word, 10, 32, line))
+            out.push(constant(word, 10, 64, line))
           }
           _ => fail(line, "trace values must be unsigned decimal strings")
         }

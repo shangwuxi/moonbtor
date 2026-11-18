@@ -23,6 +23,10 @@ pub fn Query::decode(
   assignment : Array[Bool],
 ) -> Result[Trace, Diagnostic] {
   try {
+    self.model.check_scalar()
+    if self.loop_start is Some(_) {
+      fail(0, "use decode_typed for lasso witnesses")
+    }
     if !self.formula.accepts(assignment) {
       fail(0, "assignment does not satisfy query CNF")
     }

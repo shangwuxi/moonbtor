@@ -26,6 +26,24 @@ pub extend Frame with @debug.Debug::{to_repr}
 pub extend Frame with Eq::{equal, not_equal}
 
 ///|
+pub extend TypedFrame with @debug.Debug::{to_repr}
+
+///|
+pub extend TypedFrame with Eq::{equal, not_equal}
+
+///|
+pub extend TypedPort with @debug.Debug::{to_repr}
+
+///|
+pub extend TypedPort with Eq::{equal, not_equal}
+
+///|
+pub extend TypedObservation with @debug.Debug::{to_repr}
+
+///|
+pub extend TypedObservation with Eq::{equal, not_equal}
+
+///|
 pub extend Observation with @debug.Debug::{to_repr}
 
 ///|

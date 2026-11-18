@@ -15,112 +15,29 @@ pub(all) struct Observation {
 } derive(Debug, Eq)
 
 ///|
-fn signed(value : UInt64, width : Int32) -> Int64 {
-  if (value & (1UL << (width - 1))) != 0UL {
-    value.reinterpret_as_int64() - (1L << width)
-  } else {
-    value.reinterpret_as_int64()
-  }
-}
-
-///|
-/// All arithmetic is modulo 2^width, never host-signed arithmetic.
-fn eval_node(
-  node : Node,
-  values : Array[UInt64],
-  nodes : Array[Node],
-) -> UInt64 {
-  if node.args.is_empty() {
-    return node.value
-  }
-  let a = values[node.args[0]]
-  let aw = nodes[node.args[0]].width
-  let b = if node.args.length() > 1 { values[node.args[1]] } else { 0UL }
-  let bit = fn(x : Bool) { if x { 1UL } else { 0UL } }
-  let result = match node.op {
-    "not" => a.lnot()
-    "neg" => 0UL - a
-    "inc" => a + 1UL
-    "dec" => a - 1UL
-    "redand" => bit(a == mask(aw))
-    "redor" => bit(a != 0UL)
-    "redxor" => {
-      let mut parity = 0UL
-      for i = 0; i < aw; i = i + 1 {
-        parity = parity ^ ((a >> i) & 1UL)
-      }
-      parity
-    }
-    "and" => a & b
-    "or" => a | b
-    "xor" => a ^ b
-    "nand" => (a & b).lnot()
-    "nor" => (a | b).lnot()
-    "xnor" => (a ^ b).lnot()
-    "iff" | "eq" => bit(a == b)
-    "implies" => bit(a == 0UL || b != 0UL)
-    "neq" => bit(a != b)
-    "add" => a + b
-    "sub" => a - b
-    "mul" => a * b
-    "ult" => bit(a < b)
-    "ulte" => bit(a <= b)
-    "ugt" => bit(a > b)
-    "ugte" => bit(a >= b)
-    "slt" => bit(signed(a, aw) < signed(b, aw))
-    "slte" => bit(signed(a, aw) <= signed(b, aw))
-    "sgt" => bit(signed(a, aw) > signed(b, aw))
-    "sgte" => bit(signed(a, aw) >= signed(b, aw))
-    "sll" => if b >= aw.to_uint64() { 0UL } else { a << b.to_int() }
-    "srl" => if b >= aw.to_uint64() { 0UL } else { a >> b.to_int() }
-    "sra" =>
-      if b >= aw.to_uint64() {
-        if signed(a, aw) < 0L {
-          mask(aw)
-        } else {
-          0UL
-        }
-      } else {
-        (signed(a, aw) >> b.to_int()).reinterpret_as_uint64()
-      }
-    "slice" => a >> node.params[1]
-    "uext" => a
-    "sext" => signed(a, aw).reinterpret_as_uint64()
-    "concat" => (a << nodes[node.args[1]].width) | b
-    "ite" => if a != 0UL { b } else { values[node.args[2]] }
-    _ => node.value
-  }
-  result & mask(node.width)
-}
-
-///|
 fn Model::values(self : Model, frame : Frame) -> Array[UInt64] raise Failure {
+  self.check_scalar()
   if frame.state.length() != self.states.length() ||
     frame.inputs.length() != self.inputs.length() {
     fail(0, "state/input assignment count mismatch")
   }
-  let result = Array::make(self.nodes.length(), 0UL)
-  for i = 0; i < self.states.length(); i = i + 1 {
-    let n = self.states[i]
-    if frame.state[i] > mask(self.nodes[n].width) {
-      fail(0, "state value exceeds width")
-    }
-    result[n] = frame.state[i]
-  }
-  for i = 0; i < self.inputs.length(); i = i + 1 {
-    let n = self.inputs[i]
-    if frame.inputs[i] > mask(self.nodes[n].width) {
-      fail(0, "input value exceeds width")
-    }
-    result[n] = frame.inputs[i]
-  }
-  for i = 0; i < self.nodes.length(); i = i + 1 {
-    let node = self.nodes[i]
-    if node.op != "state" && node.op != "input" {
-      result[i] = eval_node(node, result, self.nodes)
+  for
+    (ports, values) in [(self.states, frame.state), (self.inputs, frame.inputs)] {
+    for i = 0; i < ports.length(); i = i + 1 {
+      if values[i] > mask(self.nodes[ports[i]].width) {
+        fail(0, "state/input value exceeds width")
+      }
     }
   }
-  result
+  let typed : TypedFrame = {
+    state: Array::makei(self.states.length(), i => {
+      concrete_word(frame.state[i], self.nodes[self.states[i]].width)
+    }),
+    inputs: Array::makei(self.inputs.length(), i => {
+      concrete_word(frame.inputs[i], self.nodes[self.inputs[i]].width)
+    }),
+  }
+  self.typed_values(typed).map(concrete_number)
 }
 
 ///|

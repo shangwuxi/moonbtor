@@ -80,7 +80,7 @@ pub fn Model::step(
     if used != free_next.length() {
       fail(0, "extra nondeterministic next values")
     }
-    let result = { state, inputs: next_inputs.copy(), }
+    let result : Frame = { state, inputs: next_inputs.copy(), }
     ignore(self.values(result))
     Ok(result)
   } catch {

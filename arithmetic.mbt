@@ -82,7 +82,7 @@ fn Encoder::shift_word(
   let fill = if op == "sra" { a[width - 1] } else { -1 }
   let mut result = a.copy()
   for j = 0; j < amount.length(); j = j + 1 {
-    let distance = if j < 6 { 1 << j } else { 64 }
+    let distance = if j < 13 { 1 << j } else { 8192 }
     let shifted = []
     for i = 0; i < width; i = i + 1 {
       let source = if op == "sll" { i - distance } else { i + distance }

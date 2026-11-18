@@ -6,10 +6,10 @@ fn Encoder::blast(
   values : Array[Array[Int32]],
 ) -> Array[Int32] raise Failure {
   if node.op == "state" || node.op == "input" {
-    return self.word(node.width)
+    return self.word(node.size())
   }
   if node.args.is_empty() {
-    return constant_word(node.value, node.width)
+    return node.value_bits.map(x => if x { 1 } else { -1 })
   }
   let a = values[node.args[0]]
   let b = if node.args.length() > 1 { values[node.args[1]] } else { [] }
@@ -21,6 +21,36 @@ fn Encoder::blast(
     "add" => self.add_word(a, b, -1)
     "sub" => self.add_word(a, b.map(x => -x), 1)
     "mul" => self.multiply(a, b)
+    "udiv" | "urem" | "sdiv" | "srem" | "smod" =>
+      self.divide_word(a, b, node.op)
+    "rol" | "ror" => self.rotate_word(a, b, node.op)
+    "uaddo" | "saddo" | "usubo" | "ssubo" | "umulo" | "smulo" | "sdivo" =>
+      [self.overflow_word(a, b, node.op)]
+    "read" => {
+      let mut cells = Array::makei(a.length() / node.width, cell => {
+        Array::makei(node.width, i => a[cell * node.width + i])
+      })
+      for selector in b {
+        cells = Array::makei(cells.length() / 2, i => {
+          self.mux_word(selector, cells[i * 2 + 1], cells[i * 2])
+        })
+      }
+      cells[0]
+    }
+    "write" => {
+      let c = values[node.args[2]]
+      let out = []
+      for cell = 0; cell < a.length() / node.width; cell = cell + 1 {
+        let selected = self.equal_word(
+          b,
+          constant_word(cell.to_uint64(), b.length()),
+        )
+        for i = 0; i < node.width; i = i + 1 {
+          out.push(self.mux(selected, c[i], a[cell * node.width + i]))
+        }
+      }
+      out
+    }
     "ite" => self.mux_word(a[0], b, values[node.args[2]])
     "eq" | "iff" => [self.equal_word(a, b)]
     "neq" => [-self.equal_word(a, b)]

@@ -17,6 +17,7 @@ pub fn Model::check(
   limits~ : Limits = Limits::default(),
 ) -> Result[Verdict, Diagnostic] {
   try {
+    self.check_scalar()
     if bound < 0 || bound > 64 {
       fail(0, "check bound must be in 0..64")
     }

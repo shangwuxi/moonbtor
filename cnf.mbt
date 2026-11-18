@@ -118,5 +118,11 @@ fn Encoder::word(self : Encoder, width : Int32) -> Array[Int32] raise Failure {
 
 ///|
 fn constant_word(value : UInt64, width : Int32) -> Array[Int32] {
-  Array::makei(width, i => if ((value >> i) & 1UL) == 1UL { 1 } else { -1 })
+  Array::makei(width, i => {
+    if i < 64 && ((value >> i) & 1UL) == 1UL {
+      1
+    } else {
+      -1
+    }
+  })
 }

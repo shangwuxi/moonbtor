@@ -5,6 +5,8 @@ pub struct Query {
   priv frames : Array[Array[Array[Int32]]]
   priv model : Model
   priv bad_index : Int32
+  priv loop_start : Int32?
+  priv justice_index : Int32?
 }
 
 ///|
@@ -48,12 +50,21 @@ pub fn Model::query(
     if depth < 0 || depth > 64 {
       fail(0, "query depth must be in 0..64")
     }
+    self.check_work_budget(depth + 1)
     if bad_index < 0 || bad_index >= self.bad.length() {
       fail(0, "bad property index out of range")
     }
+    if !self.fair.is_empty() || !self.justice.is_empty() {
+      fail(
+        0, "fair/justice models require lasso_query; finite reachability is not fair liveness",
+      )
+    }
     let mut bits = 0
     for node in self.nodes {
-      bits += node.width
+      bits += node.size()
+      if bits > 1000000 / (depth + 1) {
+        fail(0, "frame bit allocation budget exhausted")
+      }
     }
     if bits > 1000000 / (depth + 1) {
       fail(0, "frame bit allocation budget exhausted")
@@ -68,7 +79,10 @@ pub fn Model::query(
       if t == 0 {
         for (target, source) in self.initial {
           for bit = 0; bit < values[target].length(); bit = bit + 1 {
-            encoder.equate(values[target][bit], values[source][bit])
+            encoder.equate(
+              values[target][bit],
+              values[source][bit % values[source].length()],
+            )
           }
         }
       } else {
@@ -85,7 +99,14 @@ pub fn Model::query(
       frames.push(values)
     }
     encoder.add_clause([frames[depth][self.bad[bad_index]][0]])
-    Ok({ formula: encoder.finish(), frames, model: self, bad_index, })
+    Ok({
+      formula: encoder.finish(),
+      frames,
+      model: self,
+      bad_index,
+      loop_start: None,
+      justice_index: None,
+    })
   } catch {
     Problem(d) => Err(d)
   }

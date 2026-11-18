@@ -21,9 +21,10 @@ priv struct Node {
   id : Int32
   op : String
   width : Int32
+  index_width : Int32
   args : Array[Int32]
   params : Array[Int32]
-  value : UInt64
+  value_bits : Array[Bool]
   symbol : String
   input_dependent : Bool
 }
@@ -39,10 +40,12 @@ pub struct Model {
   priv bad : Array[Int32]
   priv constraints : Array[Int32]
   priv outputs : Array[Int32]
+  priv fair : Array[Int32]
+  priv justice : Array[Array[Int32]]
 }
 
 ///|
-/// Parser and allocation limits. Widths are deliberately bounded to 32 bits.
+/// Parser limits, independent of the exact finite-domain execution budget.
 pub(all) struct ParseLimits {
   max_lines : Int32
   max_line_length : Int32
@@ -52,7 +55,12 @@ pub(all) struct ParseLimits {
 
 ///|
 pub fn ParseLimits::default() -> ParseLimits {
-  { max_lines: 20000, max_line_length: 4096, max_nodes: 10000, max_width: 32, }
+  {
+    max_lines: 20000,
+    max_line_length: 16384,
+    max_nodes: 10000,
+    max_width: 4096,
+  }
 }
 
 ///|
@@ -93,5 +101,69 @@ pub fn Model::bad_count(self : Model) -> Int32 {
 
 ///|
 fn mask(width : Int32) -> UInt64 {
-  (1UL << width) - 1UL
+  if width >= 64 {
+    0UL.lnot()
+  } else {
+    (1UL << width) - 1UL
+  }
+}
+
+///|
+/// Arrays use increasing unsigned address order, each cell little endian.
+pub(all) struct TypedFrame {
+  state : Array[Array[Bool]]
+  inputs : Array[Array[Bool]]
+} derive(Debug, Eq)
+
+///|
+pub(all) struct TypedPort {
+  id : Int32
+  width : Int32
+  index_width : Int32
+  symbol : String
+} derive(Debug, Eq)
+
+///|
+pub fn Model::typed_state_ports(self : Model) -> Array[TypedPort] {
+  self.states.map(i => {
+    id: self.nodes[i].id,
+    width: self.nodes[i].width,
+    index_width: self.nodes[i].index_width,
+    symbol: self.nodes[i].symbol,
+  })
+}
+
+///|
+pub fn Model::typed_input_ports(self : Model) -> Array[TypedPort] {
+  self.inputs.map(i => {
+    id: self.nodes[i].id,
+    width: self.nodes[i].width,
+    index_width: self.nodes[i].index_width,
+    symbol: self.nodes[i].symbol,
+  })
+}
+
+///|
+fn Node::size(self : Node) -> Int32 raise Failure {
+  if self.index_width > 19 || self.width > 1000000 / (1 << self.index_width) {
+    fail(0, "exact array expansion exceeds the 1000000-bit resource budget")
+  }
+  self.width * (1 << self.index_width)
+}
+
+///|
+fn Model::check_work_budget(self : Model, frames : Int32) -> Unit raise Failure {
+  let mut work = 0L
+  for n in self.nodes {
+    let size = n.size().to_int64()
+    let cost = match n.op {
+      "mul" | "umulo" | "smulo" | "udiv" | "urem" | "sdiv" | "srem" | "smod" =>
+        size * size * 4L
+      _ => size
+    }
+    work += cost
+    if work > 20000000L / frames.to_int64() {
+      fail(0, "arithmetic work budget exhausted")
+    }
+  }
 }
