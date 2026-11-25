@@ -18,7 +18,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install pinned official compiler and core with SHA256 verification
+      - name: Install pinned official compiler and core at the pinned stable release
         shell: bash
         run: |
           bash tools/install-toolchain.sh "$RUNNER_TEMP/moonbtor-toolchain"
