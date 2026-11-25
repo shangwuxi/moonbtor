@@ -34,7 +34,8 @@ fn parse_inner(text : String, limits : ParseLimits) -> Model raise Failure {
   let outputs : Array[Int32] = []
   let fair : Array[Int32] = []
   let justice : Array[Array[Int32]] = []
-  let sorts : Map[Int32, (Int32, Int32)] = Map([])
+  let sorts : Map[Int32, ValueSort] = Map([])
+  let shapes : Map[(Int32, Int32), ValueSort] = Map([])
   let ids : Map[Int32, Int32] = Map([])
   let mut previous = 0
   let mut line = 0
@@ -61,19 +62,52 @@ fn parse_inner(text : String, limits : ParseLimits) -> Model raise Failure {
     previous = id
     let op = w[1]
     if op == "sort" {
-      if w.length() == 4 && w[2] == "bitvec" {
+      if w.length() >= 4 && w[2] == "bitvec" {
+        need(w, 4, line)
         let width = natural(w[3], line)
         if width < 1 || width > limits.max_width {
           fail(line, "bit-vector width outside parser resource limit")
         }
-        sorts[id] = (width, 0)
-      } else if w.length() == 5 && w[2] == "array" {
+        let signature = (width, 0)
+        let shape = match shapes.get(signature) {
+          Some(shape) => shape
+          None => {
+            let shape : ValueSort = {
+              key: id,
+              leaf_width: width,
+              flat_bits: width,
+              parts: None,
+            }
+            shapes[signature] = shape
+            shape
+          }
+        }
+        sorts[id] = shape
+      } else if w.length() >= 5 && w[2] == "array" {
+        need(w, 5, line)
         let a = sort_ref(sorts, w[3], line)
         let b = sort_ref(sorts, w[4], line)
-        if a.1 != 0 || b.1 != 0 {
-          fail(line, "array sorts require bit-vector index and element")
+        let signature = (a.key, b.key)
+        let shape = match shapes.get(signature) {
+          Some(shape) => shape
+          None => {
+            let flat_bits = if a.flat_bits > 19 ||
+              b.flat_bits > 1000000 / (1 << a.flat_bits) {
+              1000001
+            } else {
+              b.flat_bits * (1 << a.flat_bits)
+            }
+            let shape : ValueSort = {
+              key: id,
+              leaf_width: b.leaf_width,
+              flat_bits,
+              parts: Some((a, b)),
+            }
+            shapes[signature] = shape
+            shape
+          }
         }
-        sorts[id] = (b.0, a.0)
+        sorts[id] = shape
       } else {
         fail(line, "invalid BTOR2 sort declaration")
       }
@@ -91,7 +125,7 @@ fn parse_inner(text : String, limits : ParseLimits) -> Model raise Failure {
       let group = []
       for j = 0; j < count; j = j + 1 {
         let arg = reference(w[3 + j], ids, nodes, line)
-        if nodes[arg].width != 1 || nodes[arg].index_width != 0 {
+        if nodes[arg].sort.bit_width() != Some(1) {
           fail(line, "justice requires Boolean operands")
         }
         group.push(arg)
@@ -102,7 +136,7 @@ fn parse_inner(text : String, limits : ParseLimits) -> Model raise Failure {
     if op == "bad" || op == "constraint" || op == "output" || op == "fair" {
       need(w, 3, line)
       let arg = reference(w[2], ids, nodes, line)
-      if nodes[arg].index_width != 0 ||
+      if nodes[arg].sort.parts is Some(_) ||
         (op != "output" && nodes[arg].width != 1) {
         fail(line, "property must have width one")
       }
@@ -120,20 +154,24 @@ fn parse_inner(text : String, limits : ParseLimits) -> Model raise Failure {
     if w.length() < 3 {
       fail(line, "missing sort")
     }
-    let (width, index_width) = sort_ref(sorts, w[2], line)
+    let sort = sort_ref(sorts, w[2], line)
+    let width = sort.leaf_width
     if op == "init" || op == "next" {
       need(w, 5, line)
       let target = lookup(ids, natural(w[3], line), line)
       let source = reference(w[4], ids, nodes, line)
+      let source_sort = nodes[source].sort
+      let broadcast = match sort.parts {
+        Some((_, element)) =>
+          op == "init" &&
+          source_sort.parts is None &&
+          source_sort.key == element.key
+        None => false
+      }
       if nodes[target].op != "state" ||
-        nodes[target].width != width ||
-        nodes[target].index_width != index_width ||
-        nodes[source].width != width ||
-        (
-          nodes[source].index_width != index_width &&
-          !(op == "init" && index_width > 0 && nodes[source].index_width == 0)
-        ) {
-        fail(line, "init/next require a state and equally sized expression")
+        nodes[target].sort.key != sort.key ||
+        (source_sort.key != sort.key && !broadcast) {
+        fail(line, "init/next state and source sort mismatch")
       }
       if op == "init" &&
         (
@@ -142,10 +180,7 @@ fn parse_inner(text : String, limits : ParseLimits) -> Model raise Failure {
         ) {
         fail(line, "init source must precede state and cannot depend on input")
       }
-      if op == "init" &&
-        index_width > 0 &&
-        nodes[source].index_width == 0 &&
-        !constant_source(nodes, source) {
+      if broadcast && !constant_source(nodes, source) {
         fail(line, "array scalar initialization requires a constant")
       }
       let list = if op == "init" { initial } else { updates }
@@ -167,7 +202,7 @@ fn parse_inner(text : String, limits : ParseLimits) -> Model raise Failure {
       op == "one" ||
       op == "ones" {
       if op != "input" && op != "state" {
-        if index_width != 0 {
+        if sort.parts is Some(_) {
           fail(line, "constant must have bit-vector sort")
         }
         value_bits = Array::makei(width, i => {
@@ -186,7 +221,7 @@ fn parse_inner(text : String, limits : ParseLimits) -> Model raise Failure {
       } else {
         10
       }
-      if index_width != 0 {
+      if sort.parts is Some(_) {
         fail(line, "constant must have bit-vector sort")
       }
       value_bits = parse_bits(w[3], base, width, line)
@@ -268,7 +303,7 @@ fn parse_inner(text : String, limits : ParseLimits) -> Model raise Failure {
       for j = 0; j < extra; j = j + 1 {
         params.push(natural(w[3 + arity + j], line))
       }
-      validate_typed_op(op, width, index_width, args, params, nodes, line)
+      validate_typed_op(op, sort, args, params, nodes, line)
     }
     need(w, count, line)
     if nodes.length() >= limits.max_nodes {
@@ -283,7 +318,7 @@ fn parse_inner(text : String, limits : ParseLimits) -> Model raise Failure {
       id,
       op,
       width,
-      index_width,
+      sort,
       args,
       params,
       value_bits,

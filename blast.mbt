@@ -27,8 +27,9 @@ fn Encoder::blast(
     "uaddo" | "saddo" | "usubo" | "ssubo" | "umulo" | "smulo" | "sdivo" =>
       [self.overflow_word(a, b, node.op)]
     "read" => {
-      let mut cells = Array::makei(a.length() / node.width, cell => {
-        Array::makei(node.width, i => a[cell * node.width + i])
+      let stride = node.size()
+      let mut cells = Array::makei(a.length() / stride, cell => {
+        Array::makei(stride, i => a[cell * stride + i])
       })
       for selector in b {
         cells = Array::makei(cells.length() / 2, i => {
@@ -39,14 +40,15 @@ fn Encoder::blast(
     }
     "write" => {
       let c = values[node.args[2]]
+      let stride = c.length()
       let out = []
-      for cell = 0; cell < a.length() / node.width; cell = cell + 1 {
+      for cell = 0; cell < a.length() / stride; cell = cell + 1 {
         let selected = self.equal_word(
           b,
           constant_word(cell.to_uint64(), b.length()),
         )
-        for i = 0; i < node.width; i = i + 1 {
-          out.push(self.mux(selected, c[i], a[cell * node.width + i]))
+        for i = 0; i < stride; i = i + 1 {
+          out.push(self.mux(selected, c[i], a[cell * stride + i]))
         }
       }
       out

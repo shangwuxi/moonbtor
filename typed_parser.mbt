@@ -23,16 +23,13 @@ fn constant_source(nodes : Array[Node], i : Int32) -> Bool {
 
 ///|
 fn sort_ref(
-  sorts : Map[Int32, (Int32, Int32)],
+  sorts : Map[Int32, ValueSort],
   text : String,
   line : Int32,
-) -> (Int32, Int32) raise Failure {
+) -> ValueSort raise Failure {
   match sorts.get(natural(text, line)) {
     Some(s) => s
-    None => {
-      fail(line, "unknown sort")
-      (0, 0)
-    }
+    None => raise Problem({ line, message: "unknown sort", })
   }
 }
 
@@ -49,7 +46,7 @@ fn reference(
   }
   let id = natural(text[1:].to_owned(), line)
   let source = lookup(ids, id, line)
-  if nodes[source].index_width != 0 {
+  if nodes[source].sort.parts is Some(_) {
     fail(line, "array references cannot be complemented")
   }
   match ids.get(-id) {
@@ -61,7 +58,7 @@ fn reference(
         id: -id,
         op: "not",
         width: n.width,
-        index_width: 0,
+        sort: n.sort,
         args: [source],
         params: [],
         value_bits: [],
@@ -126,54 +123,40 @@ fn parse_bits(
 ///|
 fn validate_typed_op(
   op : String,
-  width : Int32,
-  iw : Int32,
+  sort : ValueSort,
   args : Array[Int32],
   params : Array[Int32],
   nodes : Array[Node],
   line : Int32,
 ) -> Unit raise Failure {
   let a = nodes[args[0]]
-  let same = fn(n : Node) { n.width == width && n.index_width == iw }
-  if op == "read" {
-    let b = nodes[args[1]]
-    if a.index_width == 0 ||
-      iw != 0 ||
-      width != a.width ||
-      b.index_width != 0 ||
-      b.width != a.index_width {
-      fail(line, "read sort mismatch")
-    }
-  } else if op == "write" {
-    let b = nodes[args[1]]
-    let c = nodes[args[2]]
-    if iw == 0 ||
-      !same(a) ||
-      b.index_width != 0 ||
-      b.width != iw ||
-      c.index_width != 0 ||
-      c.width != width {
-      fail(line, "write sort mismatch")
+  if op == "read" || op == "write" {
+    match a.sort.parts {
+      Some((index, element)) =>
+        if nodes[args[1]].sort.key != index.key ||
+          (if op == "read" {
+            sort.key != element.key
+          } else {
+            sort.key != a.sort.key || nodes[args[2]].sort.key != element.key
+          }) {
+          fail(line, op + " sort mismatch")
+        }
+      None => fail(line, op + " requires an array")
     }
   } else if op == "ite" {
-    if a.width != 1 ||
-      a.index_width != 0 ||
-      !same(nodes[args[1]]) ||
-      !same(nodes[args[2]]) {
+    if a.sort.bit_width() != Some(1) ||
+      nodes[args[1]].sort.key != sort.key ||
+      nodes[args[2]].sort.key != sort.key {
       fail(line, "ite sort mismatch")
     }
-  } else if (op == "eq" || op == "neq") && a.index_width != 0 {
-    let b = nodes[args[1]]
-    if iw != 0 ||
-      width != 1 ||
-      a.width != b.width ||
-      a.index_width != b.index_width {
-      fail(line, "array equality sort mismatch")
+  } else if op == "eq" || op == "neq" {
+    if sort.bit_width() != Some(1) || a.sort.key != nodes[args[1]].sort.key {
+      fail(line, "equality sort mismatch")
     }
   } else {
-    if iw != 0 || args.any(i => nodes[i].index_width != 0) {
+    if sort.parts is Some(_) || args.any(i => nodes[i].sort.parts is Some(_)) {
       fail(line, "operator requires bit-vector operands")
     }
-    validate_op(op, width, args, params, nodes, line)
+    validate_op(op, sort.leaf_width, args, params, nodes, line)
   }
 }

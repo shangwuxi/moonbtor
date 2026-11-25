@@ -6,12 +6,14 @@ MoonBTOR 是用 MoonBit 实现的 BTOR2 状态模型执行与有界验证库。�
 
 **0.2.0 不再将数组、除余或溢出谓词排除在项目目标之外**：已实现非嵌套数组、标准位向量算子、负引用，以及 fair/justice 的有限闭环查询。长期目标是对齐常用 BTOR2 标准输入与工作流；当前实现边界和资源上限见[兼容矩阵](docs/compatibility.md)，不声称无条件兼容所有模型或完成无界证明。
 
+`0.3.0` 增加嵌套数组执行/CNF 与 BTOR2 SAT witness 编解码；功能及限制以源码和下方兼容矩阵为准。
+
 ## 安装与环境
 
-模块：[`shangwuxi/moonbtor@0.2.0`](https://mooncakes.io/docs/shangwuxi/moonbtor)。要求 `moonc >= 0.10.16`，固定验收工具链 `moonc 0.10.18+6c83a7f62`、moon `0.1.20261028`。
+模块：[`shangwuxi/moonbtor@0.3.0`](https://mooncakes.io/docs/shangwuxi/moonbtor)。要求 `moonc >= 0.10.16`，固定验收工具链 `moonc 0.10.18+6c83a7f62`、moon `0.1.20261028`。
 
 ```sh
-moon add shangwuxi/moonbtor@0.2.0
+moon add shangwuxi/moonbtor@0.3.0
 ```
 
 在消费者 `moon.pkg` 导入：
@@ -33,6 +35,7 @@ cd moonbtor
 moon run examples/counter
 moon run examples/memory
 moon run examples/lasso
+moon run examples/witness
 moon run examples/simulate
 python tools/external_roundtrip.py js
 ```
@@ -89,13 +92,15 @@ SAT 文本必须包含一行 `s SATISFIABLE` 和以 `0` 结束的 `v` 赋值，�
 
 ### 轨迹格式
 
-`Trace.to_json_string()` / `parse_trace()` 是本项目 schema v1，只服务非数组、至多 64 位无符号标量；十进制值精确保留。TypedTrace 目前使用内存 API，没有文件序列化器。**schema v1 不是标准 BTOR2 witness，不宣称标准 witness 文件互通。**
+`Model::read_witness(text)` 读取 BTOR2 `sat` 见证，按零基序号解析 `b`/`j` 声明、`#` 状态帧、`@` 输入帧、二进制值和单层数组索引，并复核初值、同步转移、约束、bad 命中及 justice/fair lasso。`Model::write_witness(trace)` 为可重放的有限 bad 轨迹或 justice lasso 写出对应文本。省略的自由值以零补全，不会搜索缺失赋值；读取时也接受 `[*]` 数组默认值扩展（不属于基本索引语法，不能假设所有工具都接受）。嵌套数组可执行和编码，但单层 `[index] value` 记录不能表示嵌套端口；需要读写此类端口记录时会明确报错。
+
+`Trace.to_json_string()` / `parse_trace()` 是另一个本项目 schema v1，仅服务非数组、至多 64 位无符号标量；十进制值精确保留。它不替代 BTOR2 witness。
 
 ## 标准语义与运行边界
 
 非嵌套数组 sort、读/写、数组 ite/eq/neq、数组 init/next；标准模算术、比较、移位、拼接/切片/扩展、旋转、除余及全部溢出谓词均有具体执行和 CNF 实现。除零、带符号最小值溢出、srem 与 smod 符号差异按 SMT 位向量语义处理。
 
-默认解析位宽上限 4096，行长 16384；数组完整展平最多 1000000 位，运算估计最多 20000000 工作单位，另有节点、CNF、深度、DPLL 预算。大地址域/大乘除模型可解析但在执行或构建时明确拒绝。它们是资源保护，不是可求解规模承诺。嵌套数组、浮点、标准 witness 文件和无界证明尚未实现。详见[兼容矩阵](docs/compatibility.md)与[架构](docs/architecture.md)。
+默认解析位宽上限 4096，行长 16384；数组完整展平最多 1000000 位，运算估计最多 20000000 工作单位，另有节点、CNF、深度、DPLL 与 witness 文本/帧预算。大地址域/大乘除模型可解析但在执行或构建时明确拒绝。它们是资源保护，不是可求解规模承诺。浮点和无界证明尚未实现。详见[兼容矩阵](docs/compatibility.md)与[架构](docs/architecture.md)。
 
 ## 开发与验收
 

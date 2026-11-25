@@ -44,6 +44,7 @@ jobs:
           moon run examples/external --target "${{ matrix.target }}" --deny-warn
           moon run examples/memory --target "${{ matrix.target }}" --deny-warn
           moon run examples/lasso --target "${{ matrix.target }}" --deny-warn
+          moon run examples/witness --target "${{ matrix.target }}" --deny-warn
       - name: External solver integration through independent Python enumeration
         if: matrix.target == 'js' || matrix.target == 'native'
         run: python tools/external_roundtrip.py "${{ matrix.target }}"

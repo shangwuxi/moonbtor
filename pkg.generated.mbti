@@ -62,18 +62,22 @@ pub fn Model::bad_count(Self) -> Int32
 pub fn Model::check(Self, Int32, bad_index? : Int32, limits? : Limits) -> Result[Verdict, Diagnostic]
 pub fn Model::check_typed(Self, Int32, bad_index? : Int32, limits? : Limits) -> Result[TypedVerdict, Diagnostic]
 pub fn Model::input_ports(Self) -> Array[Port]
+pub fn Model::input_sort(Self, Int32) -> ValueSort?
 pub fn Model::lasso_query(Self, Int32, Int32, justice_index? : Int32?, limits? : Limits) -> Result[Query, Diagnostic]
 pub fn Model::node_count(Self) -> Int32
 pub fn Model::observe(Self, Frame) -> Result[Observation, Diagnostic]
 pub fn Model::observe_typed(Self, TypedFrame) -> Result[TypedObservation, Diagnostic]
 pub fn Model::query(Self, Int32, bad_index? : Int32, limits? : Limits) -> Result[Query, Diagnostic]
+pub fn Model::read_witness(Self, String) -> Result[VerifiedWitness, Diagnostic]
 pub fn Model::replay(Self, Trace) -> Result[Unit, Diagnostic]
 pub fn Model::replay_typed(Self, TypedTrace) -> Result[Unit, Diagnostic]
 pub fn Model::state_ports(Self) -> Array[Port]
+pub fn Model::state_sort(Self, Int32) -> ValueSort?
 pub fn Model::step(Self, Frame, Array[UInt64], Array[UInt64]) -> Result[Frame, Diagnostic]
 pub fn Model::step_typed(Self, TypedFrame, Array[Array[Bool]], Array[Array[Bool]]) -> Result[TypedFrame, Diagnostic]
 pub fn Model::typed_input_ports(Self) -> Array[TypedPort]
 pub fn Model::typed_state_ports(Self) -> Array[TypedPort]
+pub fn Model::write_witness(Self, TypedTrace) -> Result[String, Diagnostic]
 
 pub(all) struct Observation {
   next_state : Array[UInt64?]
@@ -181,6 +185,13 @@ pub fn TypedVerdict::equal(Self, Self) -> Bool
 pub fn TypedVerdict::not_equal(Self, Self) -> Bool
 pub fn TypedVerdict::to_repr(Self) -> @debug.Repr
 
+pub struct ValueSort {
+  // private fields
+}
+pub fn ValueSort::array_parts(Self) -> (Self, Self)?
+pub fn ValueSort::bit_width(Self) -> Int32?
+pub fn ValueSort::flattened_width(Self) -> Int32?
+
 pub(all) enum Verdict {
   Counterexample(Trace)
   BoundedSafe(Int32)
@@ -189,6 +200,16 @@ pub(all) enum Verdict {
 pub fn Verdict::equal(Self, Self) -> Bool
 pub fn Verdict::not_equal(Self, Self) -> Bool
 pub fn Verdict::to_repr(Self) -> @debug.Repr
+
+pub(all) struct VerifiedWitness {
+  frames : Array[TypedFrame]
+  bad_hits : Array[(Int32, Int32)]
+  justice : Array[Int32]
+  loop_start : Int32?
+} derive(Eq, @debug.Debug)
+pub fn VerifiedWitness::equal(Self, Self) -> Bool
+pub fn VerifiedWitness::not_equal(Self, Self) -> Bool
+pub fn VerifiedWitness::to_repr(Self) -> @debug.Repr
 
 // Type aliases
 

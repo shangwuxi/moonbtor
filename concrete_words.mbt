@@ -208,14 +208,15 @@ fn concrete_operation(node : Node, values : Array[Array[Bool]]) -> Array[Bool] {
       })
     "ite" => (if a[0] { b } else { values[node.args[2]] }).copy()
     "read" => {
-      let offset = concrete_number(b).to_int() * node.width
-      Array::makei(node.width, i => a[offset + i])
+      let stride = a.length() >> b.length()
+      let offset = concrete_number(b).to_int() * stride
+      Array::makei(stride, i => a[offset + i])
     }
     "write" => {
-      let offset = concrete_number(b).to_int() * node.width
       let c = values[node.args[2]]
+      let offset = concrete_number(b).to_int() * c.length()
       Array::makei(w, i => {
-        if i >= offset && i < offset + node.width {
+        if i >= offset && i < offset + c.length() {
           c[i - offset]
         } else {
           a[i]
