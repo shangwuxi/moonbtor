@@ -1,4 +1,5 @@
 ///|
+#derive(Debug, Eq)
 pub(all) struct TypedObservation {
   next_state : Array[Array[Bool]?]
   outputs : Array[Array[Bool]]
@@ -6,7 +7,7 @@ pub(all) struct TypedObservation {
   constraints_hold : Bool
   fair : Array[Bool]
   justice : Array[Array[Bool]]
-} derive(Debug, Eq)
+}
 
 ///|
 fn Model::typed_values(

@@ -1,11 +1,12 @@
 ///|
 /// A finite bad prefix or a closed, fair, justice-satisfying lasso.
+#derive(Debug, Eq)
 pub(all) struct TypedTrace {
   frames : Array[TypedFrame]
   bad_index : Int32
   loop_start : Int32?
   justice_index : Int32?
-} derive(Debug, Eq)
+}
 
 ///|
 pub extend TypedTrace with @debug.Debug::{to_repr}

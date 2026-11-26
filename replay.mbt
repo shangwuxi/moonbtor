@@ -1,9 +1,10 @@
 ///|
 /// A finite concrete counterexample; bad_index uses property declaration order.
+#derive(Debug, Eq)
 pub(all) struct Trace {
   frames : Array[Frame]
   bad_index : Int32
-} derive(Debug, Eq)
+}
 
 ///|
 /// Independently check initial equations, every prefix constraint and every update.

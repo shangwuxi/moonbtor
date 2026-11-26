@@ -1,10 +1,11 @@
 ///|
 /// SAT results have no implicit timeout-to-UNSAT conversion.
+#derive(Debug, Eq)
 pub(all) enum SatResult {
   Satisfiable(Array[Bool])
   Unsatisfiable
   Indeterminate(String)
-} derive(Debug, Eq)
+}
 
 ///|
 priv struct Search {

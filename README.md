@@ -10,10 +10,10 @@ MoonBTOR 是用 MoonBit 实现的 BTOR2 状态模型执行与有界验证库。�
 
 ## 安装与环境
 
-模块：[`shangwuxi/moonbtor@0.3.1`](https://mooncakes.io/docs/shangwuxi/moonbtor)。要求 `moonc >= 0.10.16`，固定验收工具链 `moonc 0.10.19+97801ee1b`（官方稳定版）、moon `0.1.20261119`。
+模块：[`shangwuxi/moonbtor@0.3.2`](https://mooncakes.io/docs/shangwuxi/moonbtor)。要求 `moonc >= 0.10.22`，固定验收工具链 `moonc 0.10.22+124d61d05`、moon/moonrun `0.1.20261119`（MoonBit 1.0 RC 前工具链）。
 
 ```sh
-moon add shangwuxi/moonbtor@0.3.1
+moon add shangwuxi/moonbtor@0.3.2
 ```
 
 在消费者 `moon.pkg` 导入：
@@ -24,6 +24,8 @@ import {
 }
 pkgtype(kind: "executable")
 ```
+
+GitHub CI 在安装时校验上述三个版本。MoonCakes 发布校验使用同一工具链；MoonCakes 服务端文档构建器由平台管理，包作者不能通过此配置指定其版本。
 
 支持 `wasm-gc`（默认）、`wasm`、`js` 和 `native`；JS 需要 Node.js，native 需要支持的 C 编译环境。Linux 四目标由 CI 检查。生产库没有第三方 SAT 或 Python/Z3 运行依赖。
 

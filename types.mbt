@@ -1,14 +1,16 @@
 ///|
 /// A located, non-secret diagnostic. Line zero denotes an API error.
+#derive(Debug, Eq)
 pub(all) struct Diagnostic {
   line : Int32
   message : String
-} derive(Debug, Eq)
+}
 
 ///|
+#derive(Debug)
 suberror Failure {
   Problem(Diagnostic)
-} derive(Debug)
+}
 
 ///|
 fn fail(line : Int32, message : String) -> Unit raise Failure {
@@ -46,12 +48,13 @@ pub struct Model {
 
 ///|
 /// Parser limits, independent of the exact finite-domain execution budget.
+#derive(Debug, Eq)
 pub(all) struct ParseLimits {
   max_lines : Int32
   max_line_length : Int32
   max_nodes : Int32
   max_width : Int32
-} derive(Debug, Eq)
+}
 
 ///|
 pub fn ParseLimits::default() -> ParseLimits {
@@ -65,11 +68,12 @@ pub fn ParseLimits::default() -> ParseLimits {
 
 ///|
 /// Stable declaration metadata for assigning inputs and interpreting traces.
+#derive(Debug, Eq)
 pub(all) struct Port {
   id : Int32
   width : Int32
   symbol : String
-} derive(Debug, Eq)
+}
 
 ///|
 pub fn Model::state_ports(self : Model) -> Array[Port] {
@@ -110,18 +114,20 @@ fn mask(width : Int32) -> UInt64 {
 
 ///|
 /// Arrays use increasing unsigned address order, each cell little endian.
+#derive(Debug, Eq)
 pub(all) struct TypedFrame {
   state : Array[Array[Bool]]
   inputs : Array[Array[Bool]]
-} derive(Debug, Eq)
+}
 
 ///|
+#derive(Debug, Eq)
 pub(all) struct TypedPort {
   id : Int32
   width : Int32
   index_width : Int32
   symbol : String
-} derive(Debug, Eq)
+}
 
 ///|
 pub fn Model::typed_state_ports(self : Model) -> Array[TypedPort] {

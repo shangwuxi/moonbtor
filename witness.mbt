@@ -1,12 +1,13 @@
 ///|
 /// A verified BTOR2 SAT witness. Bad hits are (property, first frame).
 /// The loop's closing transition leaves the last recorded frame.
+#derive(Debug, Eq)
 pub(all) struct VerifiedWitness {
   frames : Array[TypedFrame]
   bad_hits : Array[(Int32, Int32)]
   justice : Array[Int32]
   loop_start : Int32?
-} derive(Debug, Eq)
+}
 
 ///|
 pub extend VerifiedWitness with @debug.Debug::{to_repr}

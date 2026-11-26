@@ -13,14 +13,16 @@ pub fn parse_dimacs(String, limits? : Limits) -> Result[Formula, Diagnostic]
 pub fn parse_trace(String) -> Result[Trace, Diagnostic]
 
 // Errors
-type Failure derive(@debug.Debug)
+#derive(@debug.Debug)
+type Failure
 pub fn Failure::to_repr(Self) -> @debug.Repr
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) struct Diagnostic {
   line : Int32
   message : String
-} derive(Eq, @debug.Debug)
+}
 pub fn Diagnostic::equal(Self, Self) -> Bool
 pub fn Diagnostic::not_equal(Self, Self) -> Bool
 pub fn Diagnostic::to_repr(Self) -> @debug.Repr
@@ -36,20 +38,22 @@ pub fn Formula::solve(Self, limits? : Limits) -> SatResult
 pub fn Formula::to_dimacs(Self) -> String
 pub fn Formula::variable_count(Self) -> Int32
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Frame {
   state : Array[UInt64]
   inputs : Array[UInt64]
-} derive(Eq, @debug.Debug)
+}
 pub fn Frame::equal(Self, Self) -> Bool
 pub fn Frame::not_equal(Self, Self) -> Bool
 pub fn Frame::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Limits {
   max_variables : Int32
   max_clauses : Int32
   max_steps : Int32
   max_decisions : Int32
-} derive(Eq, @debug.Debug)
+}
 pub fn Limits::default() -> Self
 pub fn Limits::equal(Self, Self) -> Bool
 pub fn Limits::not_equal(Self, Self) -> Bool
@@ -79,32 +83,35 @@ pub fn Model::typed_input_ports(Self) -> Array[TypedPort]
 pub fn Model::typed_state_ports(Self) -> Array[TypedPort]
 pub fn Model::write_witness(Self, TypedTrace) -> Result[String, Diagnostic]
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Observation {
   next_state : Array[UInt64?]
   outputs : Array[UInt64]
   bad : Array[Bool]
   constraints_hold : Bool
-} derive(Eq, @debug.Debug)
+}
 pub fn Observation::equal(Self, Self) -> Bool
 pub fn Observation::not_equal(Self, Self) -> Bool
 pub fn Observation::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct ParseLimits {
   max_lines : Int32
   max_line_length : Int32
   max_nodes : Int32
   max_width : Int32
-} derive(Eq, @debug.Debug)
+}
 pub fn ParseLimits::default() -> Self
 pub fn ParseLimits::equal(Self, Self) -> Bool
 pub fn ParseLimits::not_equal(Self, Self) -> Bool
 pub fn ParseLimits::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Port {
   id : Int32
   width : Int32
   symbol : String
-} derive(Eq, @debug.Debug)
+}
 pub fn Port::equal(Self, Self) -> Bool
 pub fn Port::not_equal(Self, Self) -> Bool
 pub fn Port::to_repr(Self) -> @debug.Repr
@@ -118,32 +125,36 @@ pub fn Query::depth(Self) -> Int32
 pub fn Query::formula(Self) -> Formula
 pub fn Query::literals(Self, Int32, Int32) -> Array[Int32]?
 
+#derive(Eq, @debug.Debug)
 pub(all) enum SatResult {
   Satisfiable(Array[Bool])
   Unsatisfiable
   Indeterminate(String)
-} derive(Eq, @debug.Debug)
+}
 pub fn SatResult::equal(Self, Self) -> Bool
 pub fn SatResult::not_equal(Self, Self) -> Bool
 pub fn SatResult::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Trace {
   frames : Array[Frame]
   bad_index : Int32
-} derive(Eq, @debug.Debug)
+}
 pub fn Trace::equal(Self, Self) -> Bool
 pub fn Trace::not_equal(Self, Self) -> Bool
 pub fn Trace::to_json_string(Self) -> String
 pub fn Trace::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct TypedFrame {
   state : Array[Array[Bool]]
   inputs : Array[Array[Bool]]
-} derive(Eq, @debug.Debug)
+}
 pub fn TypedFrame::equal(Self, Self) -> Bool
 pub fn TypedFrame::not_equal(Self, Self) -> Bool
 pub fn TypedFrame::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct TypedObservation {
   next_state : Array[Array[Bool]?]
   outputs : Array[Array[Bool]]
@@ -151,36 +162,39 @@ pub(all) struct TypedObservation {
   constraints_hold : Bool
   fair : Array[Bool]
   justice : Array[Array[Bool]]
-} derive(Eq, @debug.Debug)
+}
 pub fn TypedObservation::equal(Self, Self) -> Bool
 pub fn TypedObservation::not_equal(Self, Self) -> Bool
 pub fn TypedObservation::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct TypedPort {
   id : Int32
   width : Int32
   index_width : Int32
   symbol : String
-} derive(Eq, @debug.Debug)
+}
 pub fn TypedPort::equal(Self, Self) -> Bool
 pub fn TypedPort::not_equal(Self, Self) -> Bool
 pub fn TypedPort::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct TypedTrace {
   frames : Array[TypedFrame]
   bad_index : Int32
   loop_start : Int32?
   justice_index : Int32?
-} derive(Eq, @debug.Debug)
+}
 pub fn TypedTrace::equal(Self, Self) -> Bool
 pub fn TypedTrace::not_equal(Self, Self) -> Bool
 pub fn TypedTrace::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) enum TypedVerdict {
   Counterexample(TypedTrace)
   BoundedSafe(Int32)
   Unknown(String)
-} derive(Eq, @debug.Debug)
+}
 pub fn TypedVerdict::equal(Self, Self) -> Bool
 pub fn TypedVerdict::not_equal(Self, Self) -> Bool
 pub fn TypedVerdict::to_repr(Self) -> @debug.Repr
@@ -192,21 +206,23 @@ pub fn ValueSort::array_parts(Self) -> (Self, Self)?
 pub fn ValueSort::bit_width(Self) -> Int32?
 pub fn ValueSort::flattened_width(Self) -> Int32?
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Verdict {
   Counterexample(Trace)
   BoundedSafe(Int32)
   Unknown(String)
-} derive(Eq, @debug.Debug)
+}
 pub fn Verdict::equal(Self, Self) -> Bool
 pub fn Verdict::not_equal(Self, Self) -> Bool
 pub fn Verdict::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct VerifiedWitness {
   frames : Array[TypedFrame]
   bad_hits : Array[(Int32, Int32)]
   justice : Array[Int32]
   loop_start : Int32?
-} derive(Eq, @debug.Debug)
+}
 pub fn VerifiedWitness::equal(Self, Self) -> Bool
 pub fn VerifiedWitness::not_equal(Self, Self) -> Bool
 pub fn VerifiedWitness::to_repr(Self) -> @debug.Repr

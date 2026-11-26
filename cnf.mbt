@@ -1,11 +1,12 @@
 ///|
 /// Hard allocation limits for an exact-frame encoding and search limits for DPLL.
+#derive(Debug, Eq)
 pub(all) struct Limits {
   max_variables : Int32
   max_clauses : Int32
   max_steps : Int32
   max_decisions : Int32
-} derive(Debug, Eq)
+}
 
 ///|
 pub fn Limits::default() -> Limits {

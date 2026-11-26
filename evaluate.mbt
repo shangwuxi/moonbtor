@@ -1,18 +1,20 @@
 ///|
 /// One concrete frame; state and input arrays use declaration order.
+#derive(Debug, Eq)
 pub(all) struct Frame {
   state : Array[UInt64]
   inputs : Array[UInt64]
-} derive(Debug, Eq)
+}
 
 ///|
 /// Values at a frame before the synchronous update.
+#derive(Debug, Eq)
 pub(all) struct Observation {
   next_state : Array[UInt64?]
   outputs : Array[UInt64]
   bad : Array[Bool]
   constraints_hold : Bool
-} derive(Debug, Eq)
+}
 
 ///|
 fn Model::values(self : Model, frame : Frame) -> Array[UInt64] raise Failure {

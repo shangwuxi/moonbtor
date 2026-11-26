@@ -1,11 +1,12 @@
 ///|
 /// BoundedSafe(k) means no selected bad state on any constrained prefix through k.
 /// It is not an inductive invariant or an unbounded proof.
+#derive(Debug, Eq)
 pub(all) enum Verdict {
   Counterexample(Trace)
   BoundedSafe(Int32)
   Unknown(String)
-} derive(Debug, Eq)
+}
 
 ///|
 /// Find the shortest counterexample for one bad property using independent queries.

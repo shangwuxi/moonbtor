@@ -1,9 +1,10 @@
 ///|
+#derive(Debug, Eq)
 pub(all) enum TypedVerdict {
   Counterexample(TypedTrace)
   BoundedSafe(Int32)
   Unknown(String)
-} derive(Debug, Eq)
+}
 
 ///|
 pub extend TypedVerdict with @debug.Debug::{to_repr}
